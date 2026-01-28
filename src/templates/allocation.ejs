@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= subject %></title>
+
+    <style>
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background-color: #f8fafc;
+        margin: 0;
+        padding: 0;
+        color: #222;
+      }
+      .container {
+        max-width: 650px;
+        margin: 20px auto;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      }
+      .hero {
+        background: linear-gradient(135deg, #0a7cff 0%, #00b894 100%);
+        padding: 50px 30px;
+        color: #fff;
+        text-align: center;
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+      }
+      .content {
+        padding: 30px 40px;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .details-box {
+        background: #f1f5f9;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-size: 14px;
+      }
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        color: #888;
+        padding: 25px 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- HERO -->
+      <div class="hero">
+        <h1>Your House Allocation is Successful</h1>
+        <p>Congratulations! Your property allocation has been finalized.</p>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="content">
+        <p>Dear <strong><%= clientName %></strong>,</p>
+
+        <p>
+          We are pleased to inform you that your house allocation has been
+          successfully completed. Thank you for your patience and cooperation
+          throughout the process.
+        </p>
+
+        <!-- DETAILS -->
+        <div class="details-box">
+          <p><strong>Allocation Details:</strong></p>
+          <p>• Allocation Number: <strong><%= allocationNumber %></strong></p>
+          <p>• Allocation Status: <strong><%= allocationStatus %></strong></p>
+          <p>• Date of Allocation: <strong><%= allocationDate %></strong></p>
+        </div>
+
+        <p>
+          Our team will contact you shortly to finalize all necessary
+          documentation and proceed with handover arrangements.
+        </p>
+
+        <p>
+          If you have any questions or need further assistance, feel free to
+          reach out. We appreciate your trust in our services.
+        </p>
+
+        <p>Warm regards,<br /><strong><%= companyName %> Team</strong></p>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer">
+        &copy; <%= new Date().getFullYear() %> <%= companyName %>. All rights
+        reserved.
+      </div>
+    </div>
+  </body>
+</html>

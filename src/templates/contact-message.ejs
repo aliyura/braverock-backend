@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+
+  <body style="font-family: Arial; background: #f5f5f5">
+    <div
+      style="
+        max-width: 650px;
+        margin: 20px auto;
+        background: #fff;
+        border-radius: 10px;
+      "
+    >
+      <%- include('partials/header') %>
+
+      <div style="padding: 30px">
+        <h2>New Contact Message</h2>
+
+        <p>You received a new message from your website contact form:</p>
+
+        <div style="background: #f1f4f8; padding: 15px; border-radius: 8px">
+          <p>• Name: <strong><%= name %></strong></p>
+          <p>• Email: <strong><%= email %></strong></p>
+          <p>• Subject: <strong><%= subject %></strong></p>
+          <p>• Message:</p>
+          <p><%= message %></p>
+        </div>
+      </div>
+
+      <div style="padding: 20px; text-align: center; color: #777">
+        © <%= new Date().getFullYear() %> <%= companyName %>
+      </div>
+    </div>
+  </body>
+</html>

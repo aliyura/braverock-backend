@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Welcome to <%= companyName %></title>
+  </head>
+
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      padding: 0;
+      margin: 0;
+    "
+  >
+    <div
+      style="
+        max-width: 650px;
+        margin: 20px auto;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+      "
+    >
+      <%- include('partials/header') %>
+
+      <div style="padding: 30px 40px">
+        <h2 style="color: #0a7cff; margin-bottom: 10px">
+          Welcome, <%= name %>!
+        </h2>
+        <p>
+          Your account has been successfully created on
+          <strong><%= companyName %></strong>.
+        </p>
+
+        <p>Here are your login details:</p>
+        <p>
+          • Email: <strong><%= email %></strong><br />
+          • Temporary Password: <strong><%= password %></strong>
+        </p>
+
+        <p>Please log in and update your password for security reasons.</p>
+      </div>
+
+      <div
+        style="padding: 20px; text-align: center; color: #777; font-size: 12px"
+      >
+        © <%= new Date().getFullYear() %> <%= companyName %>. All rights
+        reserved.
+      </div>
+    </div>
+  </body>
+</html>

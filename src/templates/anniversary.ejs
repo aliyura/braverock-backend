@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Happy Anniversary, <%= userName %>!</title>
+    <style>
+      body {
+        font-family: 'Poppins', 'Segoe UI', Tahoma, sans-serif;
+        background-color: #f9f9fc;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+      .container {
+        max-width: 650px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      }
+      .header {
+        background: linear-gradient(135deg, #f4b400, #ff9900);
+        text-align: center;
+        padding: 40px 30px;
+        color: #fff;
+      }
+      .header img {
+        width: 120px;
+        margin-bottom: 15px;
+      }
+      .header h1 {
+        font-size: 28px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .header p {
+        font-size: 16px;
+        margin-top: 8px;
+      }
+      .content {
+        padding: 35px 40px;
+        line-height: 1.7;
+        font-size: 15px;
+      }
+      .content h2 {
+        color: #444;
+        font-size: 20px;
+        margin-bottom: 15px;
+      }
+      .ribbon {
+        text-align: center;
+        margin: 25px 0;
+      }
+      .ribbon img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+        animation: float 3s ease-in-out infinite;
+      }
+      @keyframes float {
+        0% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+        100% {
+          transform: translateY(0);
+        }
+      }
+      .cta {
+        text-align: center;
+        margin-top: 30px;
+      }
+      .cta a {
+        display: inline-block;
+        background-color: #f4b400;
+        color: #fff;
+        padding: 12px 25px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 5px rgba(244, 180, 0, 0.4);
+      }
+      .footer {
+        text-align: center;
+        padding: 25px 20px;
+        font-size: 13px;
+        color: #777;
+        background: #f5f6f8;
+      }
+      .footer a {
+        color: #f4b400;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="<%= logoUrl %>" alt="Company Logo" />
+        <h1>Happy Anniversary, <%= userName %>! 🎊</h1>
+        <p>Celebrating your journey with <%= companyName %></p>
+      </div>
+
+      <div class="content">
+        <h2>Dear <%= userName %>,</h2>
+        <p>
+          Today marks another milestone in our journey together, and we couldn’t
+          be happier to celebrate it with you.
+        </p>
+        <p>
+          On behalf of the entire <strong><%= companyName %></strong> family, we
+          sincerely thank you for your continued trust, loyalty, and
+          partnership. Working with clients like you inspires us to do our best
+          every day.
+        </p>
+
+        <div class="ribbon">
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/7010/7010852.png"
+            alt="Anniversary Ribbon"
+          />
+        </div>
+
+        <p
+          style="
+            text-align: center;
+            font-style: italic;
+            color: #555;
+            margin: 20px 0;
+          "
+        >
+          “Here’s to more years of growth, innovation, and success — together.”
+        </p>
+
+        <div class="cta">
+          <a href="<%= ctaUrl %>" target="_blank">Visit Us ❤️</a>
+        </div>
+
+        <p style="margin-top: 35px; font-size: 14px; color: #777">
+          With heartfelt gratitude,<br />
+          <strong>The <%= companyName %> Team</strong>
+        </p>
+      </div>
+
+      <div class="footer">
+        &copy; <%= new Date().getFullYear() %> <%= companyName %>. All rights
+        reserved.<br />
+        <a href="<%= appUrl %>"><%= appUrl %></a>
+      </div>
+    </div>
+  </body>
+</html>

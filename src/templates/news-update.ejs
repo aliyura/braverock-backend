@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+
+  <body style="font-family: Arial; background: #eef2f7">
+    <div
+      style="
+        max-width: 650px;
+        margin: 20px auto;
+        background: white;
+        border-radius: 12px;
+      "
+    >
+      <%- include('partials/header') %>
+
+      <div style="padding: 30px">
+        <h2><%= title %></h2>
+        <p><%= message %></p>
+      </div>
+
+      <div style="padding: 20px; text-align: center; color: #888">
+        © <%= new Date().getFullYear() %> <%= companyName %> – All Rights
+        Reserved
+      </div>
+    </div>
+  </body>
+</html>

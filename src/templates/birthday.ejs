@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy Birthday, <%= userName %>!</title>
+  <style>
+    body {
+      font-family: 'Poppins', 'Segoe UI', Tahoma, sans-serif;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 650px;
+      margin: 20px auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .header {
+      background: linear-gradient(135deg, #ff4081, #ff6e40);
+      text-align: center;
+      padding: 40px 30px;
+      color: #fff;
+    }
+    .header img {
+      width: 120px;
+      margin-bottom: 15px;
+    }
+    .header h1 {
+      font-size: 28px;
+      margin: 0;
+      font-weight: 700;
+    }
+    .header p {
+      font-size: 16px;
+      margin-top: 8px;
+    }
+    .content {
+      padding: 30px 40px;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+    .content h2 {
+      color: #444;
+      font-size: 20px;
+      margin-bottom: 15px;
+    }
+    .gift {
+      text-align: center;
+      margin: 25px 0;
+    }
+    .gift img {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+      100% { transform: translateY(0); }
+    }
+    .cta {
+      text-align: center;
+      margin-top: 25px;
+    }
+    .cta a {
+      display: inline-block;
+      background-color: #ff4081;
+      color: #fff;
+      padding: 12px 25px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .footer {
+      text-align: center;
+      padding: 25px 20px;
+      font-size: 13px;
+      color: #666;
+      background: #f5f6f8;
+    }
+    .footer a {
+      color: #ff4081;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="<%= logoUrl %>" alt="Company Logo" />
+      <h1>Happy Birthday, <%= userName %>! 🎉</h1>
+      <p>Today is all about you — let’s celebrate!</p>
+    </div>
+
+    <div class="content">
+      <h2>Dear <%= userName %>,</h2>
+      <p>
+        Wishing you a fantastic birthday filled with laughter, love, and every success you deserve.
+        🎂 May your year ahead be full of new opportunities, happiness, and prosperity!
+      </p>
+      <p>
+        We at <strong><%= companyName %></strong> are delighted to celebrate this special day with you.
+        Thank you for being part of our family — your trust means the world to us!
+      </p>
+
+      <div class="gift">
+        <img src="https://cdn-icons-png.flaticon.com/512/727/727399.png" alt="Birthday Gift" />
+      </div>
+
+      <div class="cta">
+        <a href="<%= ctaUrl %>" target="_blank">Visit Us 🎁</a>
+      </div>
+
+      <p style="margin-top:30px; font-size:14px; color:#777;">
+        With warm wishes,<br />
+        <strong>The <%= companyName %> Team</strong>
+      </p>
+    </div>
+
+    <div class="footer">
+      &copy; <%= new Date().getFullYear() %> <%= companyName %>. All rights reserved.<br />
+      <a href="<%= appUrl %>"><%= appUrl %></a>
+    </div>
+  </div>
+</body>
+</html>

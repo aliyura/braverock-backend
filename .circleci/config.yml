@@ -1,0 +1,25 @@
+version: 2.1
+jobs:
+  build:
+    machine:
+      image: ubuntu-2204:2024.05.1
+
+    working_directory: ~/app
+    steps:
+      # git pull
+      - checkout
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - app-{{ checksum "package.json" }}
+
+      - run:
+          name: Setting up Docker
+          command: |
+            echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
+
+      - run:
+          name: Build and push to DockerHub
+          command: |
+            docker build --tag=aliyura/braverock-backend:latest .
+            docker push aliyura/braverock-backend:latest

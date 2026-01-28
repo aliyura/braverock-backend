@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Payment Update</title>
+  </head>
+
+  <body style="background: #f5f7fa; font-family: Arial, sans-serif">
+    <div
+      style="
+        max-width: 650px;
+        margin: 20px auto;
+        background: #fff;
+        border-radius: 10px;
+      "
+    >
+      <%- include('partials/header') %>
+
+      <div style="padding: 30px">
+        <h2>Payment Successful</h2>
+        <p>Dear <strong><%= name %></strong>,</p>
+
+        <p>Your payment has been successfully processed.</p>
+
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px">
+          <p>• Amount: <strong><%= amount %></strong></p>
+          <p>• Reference: <strong><%= reference %></strong></p>
+          <p>• Date: <strong><%= paymentDate %></strong></p>
+        </div>
+
+        <p>Thank you for your continued trust in us.</p>
+      </div>
+
+      <div
+        style="padding: 20px; text-align: center; color: #888; font-size: 12px"
+      >
+        © <%= new Date().getFullYear() %> <%= companyName %>.
+      </div>
+    </div>
+  </body>
+</html>

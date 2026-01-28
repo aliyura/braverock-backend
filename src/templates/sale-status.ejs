@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+
+  <body style="font-family: Arial; background: #f7f9ff">
+    <div
+      style="
+        max-width: 650px;
+        margin: 20px auto;
+        background: #fff;
+        border-radius: 10px;
+      "
+    >
+      <%- include('partials/header') %>
+
+      <div style="padding: 30px">
+        <h2>Sale Update</h2>
+        <p>Dear <strong><%= name %></strong>,</p>
+
+        <p>
+          Your sale request has a new status:
+          <strong><%= saleStatus %></strong>.
+        </p>
+
+        <div style="background: #eef3f9; padding: 15px; border-radius: 8px">
+          <p>• Property: <strong><%= propertyName %></strong></p>
+          <p>• Sale Code: <strong><%= saleCode %></strong></p>
+          <p>• Amount: <strong><%= amount %></strong></p>
+          <p>• Date: <strong><%= date %></strong></p>
+        </div>
+
+        <p>We will keep you updated as the process continues.</p>
+      </div>
+
+      <div style="text-align: center; padding: 20px; color: #777">
+        © <%= new Date().getFullYear() %> <%= companyName %>
+      </div>
+    </div>
+  </body>
+</html>

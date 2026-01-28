@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Query Letter Revoked</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f8fafc;
+        padding: 20px;
+        margin: 0;
+      }
+      .container {
+        max-width: 650px;
+        margin: auto;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.08);
+      }
+      .hero {
+        background: linear-gradient(135deg, #6c757d, #adb5bd);
+        color: #fff;
+        padding: 40px;
+        text-align: center;
+      }
+      .content {
+        padding: 30px 40px;
+        color: #333;
+        line-height: 1.6;
+      }
+      .footer {
+        text-align: center;
+        padding: 20px;
+        font-size: 13px;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="hero">
+        <h1>Query Letter Revoked</h1>
+        <p>No further action required</p>
+      </div>
+
+      <div class="content">
+        <h2>Dear <%= userName %>,</h2>
+        <p>The previously issued query letter has been revoked by HR.</p>
+        <p><%= bodyMessage %></p>
+
+        <p style="margin-top: 20px; font-size: 14px">
+          Regards,<br />
+          <strong><%= companyName %> HR Team</strong>
+        </p>
+      </div>
+
+      <div class="footer">
+        © <%= new Date().getFullYear() %> <%= companyName %>. All rights
+        reserved.
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+
+  <body style="background: #f8f9fb; font-family: Arial">
+    <div
+      style="
+        max-width: 650px;
+        margin: 20px auto;
+        background: #fff;
+        border-radius: 8px;
+      "
+    >
+      <%- include('partials/header') %>
+
+      <div style="padding: 30px">
+        <h2>Your Payment Plan is Ready</h2>
+        <p>Dear <strong><%= name %></strong>,</p>
+
+        <p>A new payment plan has been created for your account.</p>
+
+        <div style="background: #eef2f7; padding: 15px; border-radius: 8px">
+          <p>• Plan Type: <strong><%= planType %></strong></p>
+          <p>• Total Amount: <strong><%= totalAmount %></strong></p>
+          <p>• Installment Amount: <strong><%= installmentAmount %></strong></p>
+          <p>• Duration: <strong><%= duration %></strong></p>
+        </div>
+
+        <p>You will receive reminders before each due date.</p>
+      </div>
+
+      <div style="text-align: center; padding: 20px; color: #666">
+        © <%= new Date().getFullYear() %> <%= companyName %>.
+      </div>
+    </div>
+  </body>
+</html>
