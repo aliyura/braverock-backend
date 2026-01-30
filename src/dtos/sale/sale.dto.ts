@@ -227,7 +227,7 @@ export class SaleDto {
   @IsString()
   designation: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   title: string;
 
@@ -243,26 +243,26 @@ export class SaleDto {
   @IsString()
   phoneNumber: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   dob: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   maritalStatus: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   gender: string;
 
   // =============================
   // ORIGIN INFORMATION
   // =============================
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   countryOfOrigin: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   stateOfOrigin: string;
 
@@ -277,7 +277,7 @@ export class SaleDto {
   // =============================
   // RESIDENTIAL INFORMATION
   // =============================
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialCountry?: string;
 
@@ -461,7 +461,7 @@ export class SaleInterestFormDto {
   @IsString()
   designation: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   title: string;
 
@@ -477,28 +477,28 @@ export class SaleInterestFormDto {
   @IsString()
   phoneNumber: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   dob: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   maritalStatus: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   gender: string;
 
   // ORIGIN INFORMATION
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   countryOfOrigin: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   stateOfOrigin: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   lgaOfOrigin: string;
 
@@ -507,7 +507,7 @@ export class SaleInterestFormDto {
   originAddress: string;
 
   // RESIDENTIAL
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialCountry?: string;
 
@@ -603,7 +603,7 @@ export class SaleInterestFormDto {
   @IsString()
   paymentReceipt: string;
 }
-export class UpdateSaleDto extends PartialType(SaleDto) {}
+export class UpdateSaleDto extends PartialType(SaleDto) { }
 
 export class ClientDetailsDto {
   @IsNotEmpty()
@@ -654,28 +654,28 @@ export class ClientDetailsDto {
   @IsString()
   phoneNumber: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   dob: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   maritalStatus: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   gender: string;
 
   // ORIGIN INFORMATION
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   countryOfOrigin: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   stateOfOrigin: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   lgaOfOrigin: string;
 
@@ -684,7 +684,7 @@ export class ClientDetailsDto {
   originAddress: string;
 
   // RESIDENTIAL
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialCountry?: string;
 

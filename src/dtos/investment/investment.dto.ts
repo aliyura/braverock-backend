@@ -54,9 +54,9 @@ export class InvestmentDto {
   @IsString()
   dob?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  maritalStatus: string;
+  maritalStatus?: string;
 
   @IsOptional()
   @IsString()
@@ -103,6 +103,10 @@ export class InvestmentDto {
   @IsOptional()
   @IsString()
   governmentIdUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  authorityLetterUrl?: string;
 
   // ============================
   // NEXT OF KIN DETAILS

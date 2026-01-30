@@ -201,6 +201,9 @@ import { SalesAccount } from './schemas/accounting/sales-account.schema';
 import { ProjectExpenseAnalysis } from './schemas/accounting/project-expense-analysis.schema';
 import { PettyCash } from './schemas/accounting/petty-cash.schema';
 import { PaymentRequest } from './schemas/accounting/payment-request.schema';
+import { AuthorityLetter } from './schemas/investment/authority-letter.schema';
+import { AuthorityLetterController } from './api/v1/investment-authority-letter/investment-authority-letter.controller';
+import { AuthorityLetterService } from './services/investment/investment-authority-letter.service';
 
 @Module({
   imports: [
@@ -303,6 +306,7 @@ import { PaymentRequest } from './schemas/accounting/payment-request.schema';
       SalesAccount,
       ProjectExpenseAnalysis,
       PettyCash,
+      AuthorityLetter,
     ]),
     JwtModule.register({
       secret: process.env.APP_SECRET,
@@ -409,6 +413,7 @@ import { PaymentRequest } from './schemas/accounting/payment-request.schema';
     SalesAccountController,
     ProjectExpenseAnalysisController,
     PettyCashController,
+    AuthorityLetterController,
   ],
   providers: [
     ConfigurationService,
@@ -480,6 +485,7 @@ import { PaymentRequest } from './schemas/accounting/payment-request.schema';
     SalesAccountService,
     ProjectExpenseAnalysisService,
     PettyCashService,
+    AuthorityLetterService,
   ],
 })
-export class AppModule {}
+export class AppModule { }

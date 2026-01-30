@@ -30,6 +30,7 @@ import { ProducerService } from 'src/queue/producer.service';
 import { CryptoService } from 'src/services/crypto/crypto.service';
 import { Helpers, Response } from 'src/helpers';
 import { Messages } from 'src/utils/messages/messages';
+import { AuthorityLetterService } from './investment-authority-letter.service';
 
 @Injectable()
 export class InvestmentService {
@@ -42,7 +43,8 @@ export class InvestmentService {
     private readonly userRepo: Repository<User>,
     private readonly queueProducerService: ProducerService,
     private readonly cryptoService: CryptoService,
-  ) {}
+    private readonly authorityLetterService: AuthorityLetterService,
+  ) { }
 
   // =============================
   // PRIVATE HELPERS
@@ -216,6 +218,13 @@ export class InvestmentService {
 
       const saved = await this.investmentRepo.save(investment);
 
+      if (requestDto.authorityLetterUrl) {
+        await this.authorityLetterService.addAuthorityLetter(authenticatedUser, {
+          investmentId: saved.id,
+          fileUrl: requestDto.authorityLetterUrl,
+        });
+      }
+
       const notification = this.buildNotification(
         client,
         'Investment Application Received',
@@ -290,6 +299,13 @@ export class InvestmentService {
       );
 
       const saved = await this.investmentRepo.save(investment);
+
+      if (requestDto.authorityLetterUrl) {
+        await this.authorityLetterService.addAuthorityLetter(authenticatedUser, {
+          investmentId: saved.id,
+          fileUrl: requestDto.authorityLetterUrl,
+        });
+      }
 
       const notification = this.buildNotification(
         client,

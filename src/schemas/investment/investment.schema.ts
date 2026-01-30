@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { Currency, InvestmentDuration, StateStatus } from 'src/enums';
 import { User } from '../user.schema';
+import { AuthorityLetter } from './authority-letter.schema';
 
 @Entity({ name: 'investments' })
 export class Investment {
@@ -68,6 +69,16 @@ export class Investment {
 
   @Column({ type: 'timestamp', nullable: true })
   paymentDate: Date;
+
+  @Column({ nullable: true, default: StateStatus.PENDING })
+  authorityLetterStatus: string;
+
+  @Column({ nullable: true })
+  authorityLetterId: number;
+
+  @ManyToOne(() => AuthorityLetter, { nullable: true })
+  @JoinColumn({ name: 'authorityLetterId' })
+  authorityLetter: AuthorityLetter;
 
   // =============================
   // LIFECYCLE DATES
