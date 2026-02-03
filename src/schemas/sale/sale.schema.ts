@@ -17,6 +17,7 @@ import { House } from '../property/house.schema';
 import { Plot } from '../property/plot.schema';
 import { Offer } from './offer.schema';
 import { PaymentPlan } from './payment-plan.schema';
+import { AuthorityLetter } from './authority-letter.schema';
 
 @Entity({ name: 'sales' })
 export class Sale {
@@ -275,6 +276,16 @@ export class Sale {
   @ManyToOne(() => Offer, { nullable: true })
   @JoinColumn({ name: 'offerId' })
   offer: Offer;
+
+  @Column({ nullable: true, default: StateStatus.PENDING })
+  authorityLetterStatus: string;
+
+  @Column({ nullable: true })
+  authorityLetterId: number;
+
+  @ManyToOne(() => AuthorityLetter, { nullable: true })
+  @JoinColumn({ name: 'authorityLetterId' })
+  authorityLetter: AuthorityLetter;
 
   @Column({ nullable: true })
   code: number;

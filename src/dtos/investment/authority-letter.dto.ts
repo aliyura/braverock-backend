@@ -2,9 +2,21 @@ import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 
 export class AuthorityLetterDto {
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
-    investmentId: number;
+    investmentId?: number;
+
+    @IsOptional()
+    @IsNumber()
+    saleId?: number;
+
+    @IsOptional()
+    @IsNumber()
+    houseId?: number;
+
+    @IsOptional()
+    @IsNumber()
+    plotId?: number;
 
     @IsNotEmpty()
     @IsString()

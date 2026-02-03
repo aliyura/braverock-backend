@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { Currency, InvestmentDuration, StateStatus } from 'src/enums';
 import { User } from '../user.schema';
-import { AuthorityLetter } from './authority-letter.schema';
+import { AuthorityLetter } from '../sale/authority-letter.schema';
 
 @Entity({ name: 'investments' })
 export class Investment {
