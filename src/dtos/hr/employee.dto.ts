@@ -137,4 +137,8 @@ export class UpdateEmployeeDto extends PartialType(EmployeeDto) {
   @IsOptional()
   @IsString()
   status: string;
+
+  @IsOptional()
+  @IsString()
+  dp: string;
 }

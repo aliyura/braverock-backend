@@ -47,7 +47,7 @@ export class UserService {
     private readonly cryptoService: CryptoService,
     private readonly queueProducerService: ProducerService,
     private readonly chatService: ChatService,
-  ) {}
+  ) { }
 
   getDepartmentByRole: Record<string, string> = {
     SUPERADMIN: 'Management',
@@ -690,7 +690,7 @@ export class UserService {
 
         if (
           !Helpers.getManagementRoles().includes(authenticatedUser.role) &&
-          authenticatedUser.id !== userId
+          Number(authenticatedUser.id) !== Number(userId)
         ) {
           return Response.failure(Messages.NoPermission);
         }
@@ -742,6 +742,10 @@ export class UserService {
         if (request.updateHistory == null)
           request.updateHistory = [updateHistory];
         else request.updateHistory.push(updateHistory);
+
+        if (requestDto.dp) {
+          request.thumbnail = requestDto.dp;
+        }
 
         const updatedUser = await this.userRepo.save(request);
         return Response.success(updatedUser);

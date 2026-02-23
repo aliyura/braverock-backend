@@ -37,7 +37,7 @@ export class EmployeeService {
     private readonly jwtService: JwtService,
     private readonly cryptoService: CryptoService,
     private readonly queueProducerService: ProducerService,
-  ) {}
+  ) { }
 
   private canManage(user: User) {
     return (
@@ -123,7 +123,7 @@ export class EmployeeService {
       NotificationCategory.NEWACCOUNT,
     );
     await this.queueProducerService.publishNotification(notification);
-    
+
 
     return savedUser;
   }
@@ -191,11 +191,15 @@ export class EmployeeService {
     dto: UpdateEmployeeDto,
   ): Promise<ApiResponse> {
     try {
-      if (!this.canManage(authenticatedUser))
-        return Response.failure(Messages.NoPermission);
-
       const employee = await this.employeeRepo.findOne({ where: { id } });
       if (!employee) return Response.failure(Messages.EmployeeNotFound);
+
+      if (
+        !this.canManage(authenticatedUser) &&
+        employee.emailAddress !== authenticatedUser.emailAddress
+      ) {
+        return Response.failure(Messages.NoPermission);
+      }
 
       const updateHistory = {
         ...dto,
@@ -205,11 +209,15 @@ export class EmployeeService {
         actionByUser: (authenticatedUser as any).name,
       };
 
-      const toUpdate = {
+      const toUpdate: any = {
         ...employee,
         ...dto,
         updateHistory: [...(employee.updateHistory || []), updateHistory],
       };
+
+      if (dto.dp) {
+        toUpdate.thumbnail = dto.dp;
+      }
 
       await this.employeeRepo.update({ id }, toUpdate);
       const updated = await this.employeeRepo.findOne({ where: { id } });

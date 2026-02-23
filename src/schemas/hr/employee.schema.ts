@@ -87,6 +87,9 @@ export class Employee {
   @Column({ nullable: true })
   residentialAddress: string;
 
+  @Column({ nullable: true })
+  thumbnail: string;
+
   @Column({ default: StateStatus.ACTIVE })
   status: string;
 
