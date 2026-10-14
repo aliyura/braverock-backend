@@ -323,7 +323,10 @@ export class UserService {
     requestDto: UserDto,
   ): Promise<ApiResponse> {
     try {
-      if (!Helpers.getManagementRoles().includes(authenticatedUser.role))
+      if (
+        !Helpers.getManagementRoles().includes(authenticatedUser.role) &&
+        !(authenticatedUser.role === UserRole.AGENT && requestDto.role === UserRole.CLIENT)
+      )
         return Response.failure(Messages.NoPermission);
 
       // Validate email & phone
@@ -688,9 +691,15 @@ export class UserService {
       if (userResponse.success) {
         const currentUser = userResponse.payload as User;
 
+        const isReferredAgent =
+          authenticatedUser.role === UserRole.AGENT &&
+          currentUser.role === UserRole.CLIENT &&
+          currentUser.referredById === authenticatedUser.id;
+
         if (
           !Helpers.getManagementRoles().includes(authenticatedUser.role) &&
-          Number(authenticatedUser.id) !== Number(userId)
+          Number(authenticatedUser.id) !== Number(userId) &&
+          !isReferredAgent
         ) {
           return Response.failure(Messages.NoPermission);
         }
@@ -1267,7 +1276,7 @@ export class UserService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
       const skip = page > 0 ? Number(page) : 0;
 
-      const requiredQuery = { ole: Not(UserRole.CLIENT) } as any;
+      const requiredQuery = { role: Not(UserRole.CLIENT) } as any;
       if (authenticatedUser.role == UserRole.SUPERADMIN)
         requiredQuery.id = Not(authenticatedUser.id);
 
@@ -1314,6 +1323,436 @@ export class UserService {
         });
       }
       return Response.failure(Messages.NoUserFound);
+    } catch (ex) {
+      console.log(Messages.Exception, ex);
+      return Response.failure(Messages.Exception);
+    }
+  }
+
+  // =============================
+  // CLIENT MANAGEMENT METHODS
+  // =============================
+
+  async createClient(
+    authenticatedUser: User,
+    requestDto: UserDto,
+  ): Promise<ApiResponse> {
+    try {
+      if (
+        !Helpers.getManagementRoles().includes(authenticatedUser.role) &&
+        authenticatedUser.role !== UserRole.AGENT
+      ) {
+        return Response.failure(Messages.NoPermission);
+      }
+
+      requestDto.role = UserRole.CLIENT;
+      if (
+        authenticatedUser.role === UserRole.AGENT &&
+        !requestDto.referredById
+      ) {
+        requestDto.referredById = authenticatedUser.id;
+      }
+
+      return await this.createUser(authenticatedUser, requestDto);
+    } catch (ex) {
+      console.log(Messages.Exception, ex);
+      return Response.failure(Messages.Exception);
+    }
+  }
+
+  async updateClient(
+    authenticatedUser: User,
+    clientId: number,
+    requestDto: UpdateUserDto,
+  ): Promise<ApiResponse> {
+    try {
+      if (!clientId || isNaN(Number(clientId))) {
+        return Response.failure(Messages.ClientNotFound);
+      }
+
+      const client = await this.userRepo.findOne({
+        where: { id: Number(clientId), role: UserRole.CLIENT },
+      });
+      if (!client) {
+        return Response.failure(Messages.ClientNotFound);
+      }
+
+      if (client.status === StateStatus.DELETED) {
+        return Response.failure('Client has already been deleted');
+      }
+
+      const isManagement = Helpers.getManagementRoles().includes(
+        authenticatedUser.role,
+      );
+      const isReferredAgent =
+        authenticatedUser.role === UserRole.AGENT &&
+        (Number(client.referredById) === Number(authenticatedUser.id) ||
+          Number(client.createdById) === Number(authenticatedUser.id));
+      const isSelf = Number(authenticatedUser.id) === Number(clientId);
+
+      if (!isManagement && !isReferredAgent && !isSelf) {
+        return Response.failure(Messages.NoPermission);
+      }
+
+      // Check email uniqueness if email is modified
+      if (
+        requestDto.emailAddress &&
+        requestDto.emailAddress.trim() !== '' &&
+        requestDto.emailAddress !== client.emailAddress
+      ) {
+        const existingUser = await this.userRepo.findOne({
+          where: { emailAddress: requestDto.emailAddress.trim() },
+        });
+
+        if (existingUser && Number(existingUser.id) !== Number(clientId)) {
+          return Response.failure(Messages.UserWithEmailAlreadyExist);
+        }
+      }
+
+      // Check phone uniqueness if phone is modified
+      if (
+        requestDto.phoneNumber &&
+        requestDto.phoneNumber.trim() !== '' &&
+        requestDto.phoneNumber !== client.phoneNumber
+      ) {
+        const existingUser = await this.userRepo.findOne({
+          where: { phoneNumber: requestDto.phoneNumber.trim() },
+        });
+
+        if (existingUser && Number(existingUser.id) !== Number(clientId)) {
+          return Response.failure(Messages.UserWithPhoneAlreadyExist);
+        }
+      }
+
+      // Password update
+      if (requestDto.password && requestDto.password.trim() !== '') {
+        const authProvider =
+          requestDto.authProvider ||
+          client.authProvider ||
+          AuthProvider.INTERNAL;
+        if (authProvider === AuthProvider.INTERNAL) {
+          requestDto.password = await this.cryptoService.encrypt(
+            requestDto.password,
+          );
+        } else {
+          requestDto.authToken = requestDto.password;
+        }
+      } else {
+        delete (requestDto as any).password;
+      }
+
+      // Prevent non-management from changing status or reassigning referral
+      if (!isManagement) {
+        delete (requestDto as any).status;
+        delete (requestDto as any).referredById;
+      }
+
+      // Role must strictly remain CLIENT
+      delete (requestDto as any).role;
+
+      // Update or link account if bank info provided
+      if (
+        requestDto.accountName ||
+        requestDto.accountNumber ||
+        requestDto.bankName
+      ) {
+        let account: Account = null;
+        if (client.accountId) {
+          account = await this.accountRepo.findOne({
+            where: { id: client.accountId },
+          });
+        }
+        if (!account) {
+          account = await this.accountRepo.findOne({
+            where: { userId: client.id },
+          });
+        }
+
+        if (account) {
+          if (requestDto.accountName !== undefined)
+            account.accountName = requestDto.accountName;
+          if (requestDto.accountNumber !== undefined)
+            account.accountNumber = requestDto.accountNumber;
+          if (requestDto.bankName !== undefined)
+            account.bankName = requestDto.bankName;
+          account.updatedAt = new Date();
+          await this.accountRepo.save(account);
+        } else {
+          const newAccount = await this.accountRepo.save({
+            balance: 0,
+            currency: Currency.NGN,
+            description: `Account opened for client ${client.name}`,
+            accountName: requestDto.accountName || null,
+            accountNumber: requestDto.accountNumber || null,
+            bankName: requestDto.bankName || null,
+            userId: client.id,
+          } as Account);
+          client.accountId = newAccount.id;
+        }
+      }
+
+      const request = {
+        ...client,
+        ...requestDto,
+        role: UserRole.CLIENT,
+      };
+
+      if (requestDto.dp) {
+        request.thumbnail = requestDto.dp;
+      } else if (requestDto.thumbnail) {
+        request.thumbnail = requestDto.thumbnail;
+      }
+
+      const updateHistory = {
+        ...requestDto,
+        actionType: ActionType.UPDATE,
+        actionDate: new Date(),
+        actionBy: authenticatedUser.id,
+        actionByUser: authenticatedUser.name,
+      };
+
+      if (request.updateHistory == null) request.updateHistory = [updateHistory];
+      else request.updateHistory.push(updateHistory);
+
+      request.updatedAt = new Date();
+      await this.userRepo.save(request);
+
+      const finalClient = await this.userRepo.findOne({
+        where: { id: Number(clientId) },
+        relations: { createdBy: true, account: true },
+      });
+
+      return Response.success(finalClient || request);
+    } catch (ex) {
+      console.log(Messages.Exception, ex);
+      return Response.failure(Messages.Exception);
+    }
+  }
+
+  async deleteClient(
+    authenticatedUser: User,
+    clientId: number,
+  ): Promise<ApiResponse> {
+    try {
+      if (!clientId || isNaN(Number(clientId))) {
+        return Response.failure(Messages.ClientNotFound);
+      }
+
+      if (!Helpers.getManagementRoles().includes(authenticatedUser.role)) {
+        return Response.failure(Messages.NoPermission);
+      }
+
+      const client = await this.userRepo.findOne({
+        where: { id: Number(clientId), role: UserRole.CLIENT },
+      });
+      if (!client) {
+        return Response.failure(Messages.ClientNotFound);
+      }
+
+      if (client.status === StateStatus.DELETED) {
+        return Response.failure('Client has already been deleted');
+      }
+
+      const deletion = `_deleted${Helpers.getCode()}`;
+      client.status = StateStatus.DELETED;
+      if (client.emailAddress) {
+        client.emailAddress = `${client.emailAddress}${deletion}`;
+      }
+      if (client.phoneNumber) {
+        client.phoneNumber = `${client.phoneNumber}${deletion}`;
+      }
+      client.notificationToken = null;
+      client.updatedAt = new Date();
+
+      const updateHistory = {
+        actionType: ActionType.DELETE,
+        actionDate: new Date(),
+        actionBy: authenticatedUser.id,
+        actionByUser: authenticatedUser.name,
+      };
+
+      if (client.updateHistory == null) client.updateHistory = [updateHistory];
+      else client.updateHistory.push(updateHistory);
+
+      await this.userRepo.save(client);
+      return Response.success('Client deleted successfully');
+    } catch (ex) {
+      console.log(Messages.Exception, ex);
+      return Response.failure(Messages.Exception);
+    }
+  }
+
+  async findClientById(
+    clientId: number,
+    authenticatedUser?: User,
+  ): Promise<ApiResponse> {
+    try {
+      if (!clientId || isNaN(Number(clientId))) {
+        return Response.failure(Messages.ClientNotFound);
+      }
+
+      const client = await this.userRepo.findOne({
+        where: {
+          id: Number(clientId),
+          role: UserRole.CLIENT,
+          status: Not(StateStatus.DELETED),
+        },
+        relations: { createdBy: true, account: true },
+      });
+      if (!client) {
+        return Response.failure(Messages.ClientNotFound);
+      }
+
+      if (authenticatedUser) {
+        const isManagement = Helpers.getManagementRoles().includes(
+          authenticatedUser.role,
+        );
+        const isReferredAgent =
+          authenticatedUser.role === UserRole.AGENT &&
+          (Number(client.referredById) === Number(authenticatedUser.id) ||
+            Number(client.createdById) === Number(authenticatedUser.id));
+        const isSelf = Number(authenticatedUser.id) === Number(client.id);
+
+        if (!isManagement && !isReferredAgent && !isSelf) {
+          return Response.failure(Messages.NoPermission);
+        }
+      }
+
+      return Response.success(client);
+    } catch (ex) {
+      console.log(Messages.Exception, ex);
+      return Response.failure(Messages.Exception);
+    }
+  }
+
+  async findAllClients(
+    authenticatedUser: User,
+    page: number,
+    limit: number,
+    filterDto: FilterDto,
+  ): Promise<ApiResponse> {
+    try {
+      const size =
+        limit > 0
+          ? Number(limit)
+          : Number(process.env.APP_PAGINATION_SIZE) || 15;
+      const skip = page > 0 ? Number(page) : 0;
+
+      const query = {
+        role: UserRole.CLIENT,
+        status: Not(StateStatus.DELETED),
+      } as any;
+
+      if (filterDto.status) query.status = filterDto.status;
+      if (filterDto.gender) query.gender = filterDto.gender;
+
+      if (authenticatedUser.role === UserRole.AGENT) {
+        query.referredById = authenticatedUser.id;
+      } else if (
+        !Helpers.getManagementRoles().includes(authenticatedUser.role)
+      ) {
+        return Response.failure(Messages.NoPermission);
+      }
+
+      const [result, count] = await this.userRepo
+        .createQueryBuilder()
+        .where(query)
+        .skip(skip * size)
+        .take(size)
+        .orderBy('createdAt', 'DESC')
+        .getManyAndCount();
+
+      if (result.length) {
+        const totalPages = Math.round(count / size);
+        return Response.success({
+          page: result,
+          size: size,
+          currentPage: Number(skip),
+          totalPages:
+            totalPages > 0
+              ? totalPages
+              : count > 0 && result.length > 0
+                ? 1
+                : 0,
+          totalRecords: count,
+        });
+      }
+      return Response.failure(Messages.ClientNotFound);
+    } catch (ex) {
+      console.log(Messages.Exception, ex);
+      return Response.failure(Messages.Exception);
+    }
+  }
+
+  async searchClients(
+    authenticatedUser: User,
+    page: number,
+    limit: number,
+    filterDto: FilterDto,
+    searchString: string,
+  ): Promise<ApiResponse> {
+    try {
+      const size =
+        limit > 0
+          ? Number(limit)
+          : Number(process.env.APP_PAGINATION_SIZE) || 15;
+      const skip = page > 0 ? Number(page) : 0;
+
+      const requiredQuery = {
+        role: UserRole.CLIENT,
+        status: Not(StateStatus.DELETED),
+      } as any;
+
+      if (filterDto.gender) requiredQuery.gender = filterDto.gender;
+      if (filterDto.status) requiredQuery.status = filterDto.status;
+
+      if (authenticatedUser.role === UserRole.AGENT) {
+        requiredQuery.referredById = authenticatedUser.id;
+      } else if (
+        !Helpers.getManagementRoles().includes(authenticatedUser.role)
+      ) {
+        return Response.failure(Messages.NoPermission);
+      }
+
+      const optonalQuery = [] as any;
+      if (searchString) {
+        optonalQuery.push({ name: Like(`%${searchString}%`) });
+        optonalQuery.push({ phoneNumber: Like(`%${searchString}%`) });
+        optonalQuery.push({ emailAddress: Like(`%${searchString}%`) });
+        optonalQuery.push({ gender: Like(`%${searchString}%`) });
+        optonalQuery.push({ residentialAddress: Like(`%${searchString}%`) });
+        optonalQuery.push({ residentialCity: Like(`%${searchString}%`) });
+        optonalQuery.push({ residentialState: Like(`%${searchString}%`) });
+        optonalQuery.push({ originAddress: Like(`%${searchString}%`) });
+        optonalQuery.push({ stateOfOrigin: Like(`%${searchString}%`) });
+        optonalQuery.push({ lgaOfOrigin: Like(`%${searchString}%`) });
+      }
+
+      const [result, count] = await this.userRepo
+        .createQueryBuilder()
+        .where(requiredQuery)
+        .andWhere(optonalQuery)
+        .take(size)
+        .skip(skip * size)
+        .orderBy('createdAt', 'DESC')
+        .getManyAndCount();
+
+      if (result.length) {
+        const totalPages = Math.round(count / size);
+        return Response.success({
+          page: result,
+          size: size,
+          currentPage: Number(skip),
+          totalPages:
+            totalPages > 0
+              ? totalPages
+              : count > 0 && result.length > 0
+                ? 1
+                : 0,
+          totalRecords: count,
+        });
+      }
+      return Response.failure(Messages.ClientNotFound);
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);

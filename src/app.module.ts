@@ -3,6 +3,7 @@ import { User } from './schemas/user.schema';
 import { UserService } from './services/user/user.service';
 import { AuthService } from './services/auth/auth.service';
 import { UserController } from './api/v1/user/user.controller';
+import { ClientController } from './api/v1/client/client.controller';
 import { AuthController } from './api/v1/auth/auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -356,6 +357,7 @@ import { AuthorityLetterService } from './services/investment/investment-authori
     AppController,
     ConfigurationController,
     UserController,
+    ClientController,
     AuthController,
     FileController,
     ChatController,

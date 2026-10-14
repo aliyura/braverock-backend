@@ -14,7 +14,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Helpers, Response } from 'src/helpers';
 import { User } from 'src/schemas/user.schema';
-import { ActionType, StateStatus, UserRole } from 'src/enums';
+import { Estate } from 'src/schemas/property/estate.schema';
+import { Layout } from 'src/schemas/property/layout.schema';
+import { ActionType, ExpenseTargetType, StateStatus, UserRole } from 'src/enums';
 import { ProducerService } from 'src/queue/producer.service';
 import { ExpenseDto, UpdateExpenseDto } from 'src/dtos/accounting/expense.dto';
 import { FilterDto } from 'src/dtos/filter.dto';
@@ -25,6 +27,8 @@ export class ExpenseService {
   constructor(
     @InjectRepository(Expense) private expenseRepo: Repository<Expense>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(Estate) private estateRepo: Repository<Estate>,
+    @InjectRepository(Layout) private layoutRepo: Repository<Layout>,
     private readonly queueProducerService: ProducerService,
   ) {}
 
@@ -33,15 +37,66 @@ export class ExpenseService {
     requestDto: ExpenseDto,
   ): Promise<ApiResponse> {
     try {
+      if (!requestDto.receipt || typeof requestDto.receipt !== 'string' || requestDto.receipt.trim() === '') {
+        return Response.failure('Expense receipt image is required');
+      }
+
+      const targetType = (requestDto.targetType || '').toUpperCase().trim();
+      let estateId: number | null = null;
+      let layoutId: number | null = null;
+      let officePurpose: string | null = null;
+
+      if (targetType === ExpenseTargetType.ESTATE) {
+        if (!requestDto.estateId || isNaN(Number(requestDto.estateId))) {
+          return Response.failure('Please select the estate that this expense belongs to');
+        }
+        const estate = await this.estateRepo.findOne({
+          where: { id: Number(requestDto.estateId) },
+        });
+        if (!estate) {
+          return Response.failure('Selected estate not found');
+        }
+        estateId = Number(requestDto.estateId);
+      } else if (targetType === ExpenseTargetType.LAYOUT) {
+        if (!requestDto.layoutId || isNaN(Number(requestDto.layoutId))) {
+          return Response.failure('Please select the layout that this expense belongs to');
+        }
+        const layout = await this.layoutRepo.findOne({
+          where: { id: Number(requestDto.layoutId) },
+        });
+        if (!layout) {
+          return Response.failure('Selected layout not found');
+        }
+        layoutId = Number(requestDto.layoutId);
+      } else if (targetType === ExpenseTargetType.OFFICE) {
+        if (
+          (!requestDto.officePurpose || requestDto.officePurpose.trim() === '') &&
+          (!requestDto.description || requestDto.description.trim() === '')
+        ) {
+          return Response.failure('Please specify what this office expense is for');
+        }
+        officePurpose = (requestDto.officePurpose || requestDto.description || '').trim();
+      } else {
+        return Response.failure('Invalid expense target type. Must be ESTATE, LAYOUT, or OFFICE');
+      }
+
       const request = {
         ...requestDto,
+        targetType,
+        estateId,
+        layoutId,
+        officePurpose,
         date: new Date(requestDto.date),
         createdById: authenticatedUser.id,
       } as unknown as Expense;
 
       const created = await this.expenseRepo.save(request);
       if (created) {
-        return Response.success(created);
+        const finalExpense = await this.expenseRepo.findOne({
+          where: { id: created.id },
+          relations: { createdBy: true, estate: true, layout: true },
+        });
+        return Response.success(finalExpense || created);
       } else {
         return Response.failure('Unable to add expense');
       }
@@ -57,14 +112,94 @@ export class ExpenseService {
     requestDto: UpdateExpenseDto,
   ): Promise<ApiResponse> {
     try {
+      if (!expenseId || isNaN(Number(expenseId))) {
+        return Response.failure(Messages.ExpenseNotAvailable);
+      }
+
       const expense = await this.expenseRepo.findOne({
-        where: { id: expenseId },
+        where: { id: Number(expenseId) },
       });
       if (!expense) return Response.failure(Messages.ExpenseNotAvailable);
+
+      const targetType =
+        requestDto.targetType !== undefined
+          ? (requestDto.targetType || '').toUpperCase().trim()
+          : expense.targetType;
+
+      let estateId = expense.estateId;
+      let layoutId = expense.layoutId;
+      let officePurpose = expense.officePurpose;
+
+      if (
+        requestDto.targetType !== undefined ||
+        requestDto.estateId !== undefined ||
+        requestDto.layoutId !== undefined ||
+        requestDto.officePurpose !== undefined
+      ) {
+        if (targetType === ExpenseTargetType.ESTATE) {
+          const selectedEstateId =
+            requestDto.estateId !== undefined
+              ? requestDto.estateId
+              : expense.estateId;
+          if (!selectedEstateId || isNaN(Number(selectedEstateId))) {
+            return Response.failure('Please select the estate that this expense belongs to');
+          }
+          const estate = await this.estateRepo.findOne({
+            where: { id: Number(selectedEstateId) },
+          });
+          if (!estate) {
+            return Response.failure('Selected estate not found');
+          }
+          estateId = Number(selectedEstateId);
+          layoutId = null;
+          officePurpose = null;
+        } else if (targetType === ExpenseTargetType.LAYOUT) {
+          const selectedLayoutId =
+            requestDto.layoutId !== undefined
+              ? requestDto.layoutId
+              : expense.layoutId;
+          if (!selectedLayoutId || isNaN(Number(selectedLayoutId))) {
+            return Response.failure('Please select the layout that this expense belongs to');
+          }
+          const layout = await this.layoutRepo.findOne({
+            where: { id: Number(selectedLayoutId) },
+          });
+          if (!layout) {
+            return Response.failure('Selected layout not found');
+          }
+          layoutId = Number(selectedLayoutId);
+          estateId = null;
+          officePurpose = null;
+        } else if (targetType === ExpenseTargetType.OFFICE) {
+          const purpose =
+            requestDto.officePurpose !== undefined
+              ? requestDto.officePurpose
+              : expense.officePurpose || requestDto.description || expense.description;
+          if (!purpose || purpose.trim() === '') {
+            return Response.failure('Please specify what this office expense is for');
+          }
+          officePurpose = purpose.trim();
+          estateId = null;
+          layoutId = null;
+        } else {
+          return Response.failure('Invalid expense target type. Must be ESTATE, LAYOUT, or OFFICE');
+        }
+      }
+
+      if (requestDto.receipt !== undefined) {
+        if (!requestDto.receipt || requestDto.receipt.trim() === '') {
+          return Response.failure('Expense receipt image cannot be empty');
+        }
+      }
 
       const updateRequest = {
         ...expense,
         ...requestDto,
+        targetType,
+        estateId,
+        layoutId,
+        officePurpose,
+        date: requestDto.date ? new Date(requestDto.date) : expense.date,
       } as Expense;
 
       const updateHistory = {
@@ -79,11 +214,14 @@ export class ExpenseService {
         updateRequest.updateHistory = [updateHistory];
       else updateRequest.updateHistory.push(updateHistory);
 
-      await this.expenseRepo.update({ id: expenseId }, updateRequest);
-      const updatedUser = await this.expenseRepo.findOne({
-        where: { id: expenseId },
+      updateRequest.updatedAt = new Date();
+      await this.expenseRepo.save(updateRequest);
+
+      const updatedExpense = await this.expenseRepo.findOne({
+        where: { id: Number(expenseId) },
+        relations: { createdBy: true, estate: true, layout: true },
       });
-      return Response.success(updatedUser);
+      return Response.success(updatedExpense || updateRequest);
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -95,9 +233,38 @@ export class ExpenseService {
     authenticatedUser: User,
   ): Promise<ApiResponse> {
     try {
-      await this.expenseRepo.delete(expenseId);
+      if (!expenseId || isNaN(Number(expenseId))) {
+        return Response.failure(Messages.ExpenseNotAvailable);
+      }
+
+      const expense = await this.expenseRepo.findOne({
+        where: { id: Number(expenseId) },
+      });
+      if (!expense) return Response.failure(Messages.ExpenseNotAvailable);
+
+      await this.expenseRepo.delete(Number(expenseId));
 
       return Response.success(Messages.DeletedSuccessfully);
+    } catch (ex) {
+      console.log(Messages.Exception, ex);
+      return Response.failure(Messages.Exception);
+    }
+  }
+
+  async getExpenseById(expenseId: number): Promise<ApiResponse> {
+    try {
+      if (!expenseId || isNaN(Number(expenseId))) {
+        return Response.failure(Messages.ExpenseNotAvailable);
+      }
+
+      const expense = await this.expenseRepo.findOne({
+        where: { id: Number(expenseId) },
+        relations: { createdBy: true, estate: true, layout: true },
+      });
+      if (expense) {
+        return Response.success(expense);
+      }
+      return Response.failure(Messages.ExpenseNotAvailable);
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -129,11 +296,14 @@ export class ExpenseService {
         );
       }
       if (filterDto.category) query.category = filterDto.category;
-
       if (filterDto.status) query.status = filterDto.status;
+      if (filterDto.targetType) query.targetType = filterDto.targetType;
+      if (filterDto.estateId) query.estateId = filterDto.estateId;
+      if (filterDto.layoutId) query.layoutId = filterDto.layoutId;
 
       const [result, count] = await this.expenseRepo.findAndCount({
         where: query,
+        relations: { createdBy: true, estate: true, layout: true },
         order: { createdAt: 'DESC' },
         take: size,
         skip: skip * size,
@@ -215,6 +385,10 @@ export class ExpenseService {
             description: Like(`%${searchString}%`),
             category: filterDto.category,
           },
+          {
+            officePurpose: Like(`%${searchString}%`),
+            category: filterDto.category,
+          },
           { amount: Like(`%${searchString}%`), category: filterDto.category },
           { category: filterDto.category },
         ];
@@ -223,20 +397,32 @@ export class ExpenseService {
         query = [
           { title: Like(`%${searchString}%`), status: filterDto.status },
           { description: Like(`%${searchString}%`), status: filterDto.status },
+          { officePurpose: Like(`%${searchString}%`), status: filterDto.status },
           { amount: Like(`%${searchString}%`), status: filterDto.status },
           { category: Like(`%${searchString}%`), status: filterDto.status },
+        ];
+      }
+      if (filterDto.targetType) {
+        query = [
+          { title: Like(`%${searchString}%`), targetType: filterDto.targetType },
+          { description: Like(`%${searchString}%`), targetType: filterDto.targetType },
+          { officePurpose: Like(`%${searchString}%`), targetType: filterDto.targetType },
+          { targetType: filterDto.targetType },
         ];
       }
 
       if (searchString && query.length <= 0) {
         query.push({ title: Like(`%${searchString}%`) });
         query.push({ description: Like(`%${searchString}%`) });
+        query.push({ officePurpose: Like(`%${searchString}%`) });
         query.push({ amount: Like(`%${searchString}%`) });
         query.push({ category: Like(`%${searchString}%`) });
+        query.push({ targetType: Like(`%${searchString}%`) });
       }
 
       const [result, count] = await this.expenseRepo.findAndCount({
         where: query,
+        relations: { createdBy: true, estate: true, layout: true },
         order: { createdAt: 'DESC' },
         take: size,
         skip: skip * size,

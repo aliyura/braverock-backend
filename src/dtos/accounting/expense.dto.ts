@@ -1,5 +1,13 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
+import { ExpenseTargetType } from 'src/enums';
 
 export class ExpenseDto {
   @IsNotEmpty()
@@ -8,7 +16,7 @@ export class ExpenseDto {
 
   @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @IsNotEmpty()
   @IsNumber()
@@ -17,6 +25,30 @@ export class ExpenseDto {
   @IsNotEmpty()
   @IsString()
   category: string;
+
+  @IsNotEmpty()
+  @IsEnum(ExpenseTargetType)
+  targetType: string;
+
+  @IsOptional()
+  @IsNumber()
+  estateId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  layoutId?: number;
+
+  @IsOptional()
+  @IsString()
+  officePurpose?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  receipt: string;
+
+  @IsOptional()
+  @IsArray()
+  proofImages?: string[];
 
   @IsNotEmpty()
   @IsString()

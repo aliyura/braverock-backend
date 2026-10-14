@@ -18,13 +18,14 @@ import { AppGuard } from 'src/services/auth/app.guard';
 import { ExpenseDto, UpdateExpenseDto } from 'src/dtos/accounting/expense.dto';
 import { UserService } from 'src/services/user/user.service';
 import { FilterDto } from 'src/dtos/filter.dto';
+import { Messages } from 'src/utils/messages/messages';
 
 @Controller('expense')
 export class ExpenseController {
   constructor(
     private expenseService: ExpenseService,
     private userService: UserService,
-  ) { }
+  ) {}
 
   @UseGuards(AppGuard)
   @Post('/')
@@ -37,14 +38,22 @@ export class ExpenseController {
       authToken,
     );
     if (!userResponse.success)
-      return Response.send(HttpStatus.UNAUTHORIZED, userResponse.message, userResponse.payload);
+      return Response.send(
+        HttpStatus.UNAUTHORIZED,
+        userResponse.message,
+        userResponse.payload,
+      );
 
     const user = userResponse.payload;
     const result = await this.expenseService.addExpense(user, requestDto);
     if (result.success) {
       return result;
     }
-    return Response.send(HttpStatus.BAD_REQUEST, result.message, result.payload);
+    return Response.send(
+      HttpStatus.BAD_REQUEST,
+      result.message,
+      result.payload,
+    );
   }
 
   @UseGuards(AppGuard)
@@ -54,25 +63,37 @@ export class ExpenseController {
     @Headers('Authorization') token: string,
     @Param('expenseId') expenseId: number,
   ): Promise<ApiResponse> {
+    const id = Number(expenseId);
+    if (!id || isNaN(id)) {
+      return Response.send(HttpStatus.BAD_REQUEST, Messages.ExpenseNotAvailable);
+    }
+
     const authToken = token && token.substring(7);
     const userResponse = await this.userService.authenticatedUserByToken(
       authToken,
     );
     if (!userResponse.success)
-      return Response.send(HttpStatus.UNAUTHORIZED, userResponse.message, userResponse.payload);
+      return Response.send(
+        HttpStatus.UNAUTHORIZED,
+        userResponse.message,
+        userResponse.payload,
+      );
 
     const user = userResponse.payload;
     const result = await this.expenseService.updateExpense(
-      expenseId,
+      id,
       user,
       requestDto,
     );
     if (result.success) {
       return result;
     }
-    return Response.send(HttpStatus.BAD_REQUEST, result.message, result.payload);
+    return Response.send(
+      HttpStatus.BAD_REQUEST,
+      result.message,
+      result.payload,
+    );
   }
-
 
   @UseGuards(AppGuard)
   @Delete('/:expenseId')
@@ -80,25 +101,69 @@ export class ExpenseController {
     @Headers('Authorization') token: string,
     @Param('expenseId') expenseId: number,
   ): Promise<ApiResponse> {
+    const id = Number(expenseId);
+    if (!id || isNaN(id)) {
+      return Response.send(HttpStatus.BAD_REQUEST, Messages.ExpenseNotAvailable);
+    }
+
     const authToken = token && token.substring(7);
     const userResponse = await this.userService.authenticatedUserByToken(
       authToken,
     );
     if (!userResponse.success)
-      return Response.send(HttpStatus.UNAUTHORIZED, userResponse.message, userResponse.payload);
+      return Response.send(
+        HttpStatus.UNAUTHORIZED,
+        userResponse.message,
+        userResponse.payload,
+      );
 
     const user = userResponse.payload;
-
-    const result = await this.expenseService.deleteExpense(
-      expenseId,
-      user
-    );
+    const result = await this.expenseService.deleteExpense(id, user);
     if (result.success) {
       return result;
     }
-    return Response.send(HttpStatus.BAD_REQUEST, result.message, result.payload);
+    return Response.send(
+      HttpStatus.BAD_REQUEST,
+      result.message,
+      result.payload,
+    );
   }
 
+  @UseGuards(AppGuard)
+  @Get('/details/:expenseId')
+  async getExpenseDetails(
+    @Param('expenseId') expenseId: number,
+    @Headers('Authorization') token: string,
+  ): Promise<ApiResponse> {
+    const id = Number(expenseId);
+    if (!id || isNaN(id)) {
+      return Response.send(HttpStatus.BAD_REQUEST, Messages.ExpenseNotAvailable);
+    }
+
+    const authToken = token && token.substring(7);
+    const userResponse = await this.userService.authenticatedUserByToken(
+      authToken,
+    );
+    if (!userResponse.success)
+      return Response.send(
+        HttpStatus.UNAUTHORIZED,
+        userResponse.message,
+        userResponse.payload,
+      );
+
+    const result = await this.expenseService.getExpenseById(id);
+    if (result.success) return result;
+    return Response.send(HttpStatus.NOT_FOUND, result.message);
+  }
+
+  @UseGuards(AppGuard)
+  @Get('/:expenseId')
+  async getExpenseById(
+    @Param('expenseId') expenseId: number,
+    @Headers('Authorization') token: string,
+  ): Promise<ApiResponse> {
+    return this.getExpenseDetails(expenseId, token);
+  }
 
   @UseGuards(AppGuard)
   @Get('/list')
@@ -113,14 +178,18 @@ export class ExpenseController {
       authToken,
     );
     if (!userResponse.success)
-      return Response.send(HttpStatus.UNAUTHORIZED, userResponse.message, userResponse.payload);
+      return Response.send(
+        HttpStatus.UNAUTHORIZED,
+        userResponse.message,
+        userResponse.payload,
+      );
 
     const user = userResponse.payload;
     const result = await this.expenseService.findAllExpenses(
       user,
       page,
       size,
-      filter
+      filter,
     );
     if (result.success) return result;
     return Response.send(HttpStatus.NOT_FOUND, result.message);
@@ -140,7 +209,11 @@ export class ExpenseController {
       authToken,
     );
     if (!userResponse.success)
-      return Response.send(HttpStatus.UNAUTHORIZED, userResponse.message, userResponse.payload);
+      return Response.send(
+        HttpStatus.UNAUTHORIZED,
+        userResponse.message,
+        userResponse.payload,
+      );
 
     const user = userResponse.payload;
     const result = await this.expenseService.searchExpenses(
@@ -148,7 +221,7 @@ export class ExpenseController {
       page,
       size,
       searchText,
-      filter
+      filter,
     );
     if (result.success) return result;
     return Response.send(HttpStatus.NOT_FOUND, result.message);

@@ -153,15 +153,48 @@ export class UserDto {
   @IsOptional()
   @IsString()
   governmentIdUrl: string;
+
+  @IsOptional()
+  @IsString()
+  userType?: string;
+
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @IsOptional()
+  referredById?: number;
+
+  @IsOptional()
+  @IsString()
+  thumbnail?: string;
+
+  @IsOptional()
+  documents?: {
+    type: string;
+    fileUrl: string;
+  }[];
 }
 
 export class UpdateUserDto extends PartialType(UserDto) {
   @IsOptional()
-  status: string;
+  status?: string;
 
   @IsOptional()
-  dp: string;
+  dp?: string;
+
+  @IsOptional()
+  thumbnail?: string;
+
+  @IsOptional()
+  documents?: {
+    type: string;
+    fileUrl: string;
+  }[];
 }
+
+export class CreateClientDto extends UserDto {}
+export class UpdateClientDto extends UpdateUserDto {}
 
 export class UserStatusChangeDto {
   @IsNotEmpty()

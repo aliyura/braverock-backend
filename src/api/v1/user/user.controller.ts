@@ -29,7 +29,6 @@ import {
 } from 'src/dtos/user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BulkUploadPropDto } from 'src/dtos/bulk-upload.dto';
-import { UserRole } from 'aws-sdk/clients/workmail';
 
 @Controller('user')
 export class UserController {
@@ -297,6 +296,83 @@ export class UserController {
     const response = await this.userService.deleteUser(user, userId);
     if (response.success) {
       return response;
+    }
+    return Response.send(HttpStatus.BAD_REQUEST, response.message);
+  }
+
+  @UseGuards(AppGuard)
+  @Put('/client/:userId')
+  async updateClient(
+    @Body() requestDto: UpdateUserDto,
+    @Param('userId') userId: number,
+    @Headers('Authorization') token: string,
+  ): Promise<ApiResponse> {
+    const clientId = Number(userId);
+    if (!clientId || isNaN(clientId)) {
+      return Response.send(HttpStatus.BAD_REQUEST, Messages.ClientNotFound);
+    }
+
+    const authToken = token && token.substring(7);
+    const userResponse =
+      await this.userService.authenticatedUserByToken(authToken);
+    if (!userResponse.success)
+      return Response.send(
+        HttpStatus.UNAUTHORIZED,
+        userResponse.message,
+        userResponse.payload,
+      );
+
+    const user = userResponse.payload;
+
+    const response = await this.userService.updateClient(
+      user,
+      clientId,
+      requestDto,
+    );
+    if (response.success) {
+      return response;
+    }
+    if (response.message === Messages.NoPermission) {
+      return Response.send(HttpStatus.FORBIDDEN, response.message);
+    }
+    if (response.message === Messages.ClientNotFound) {
+      return Response.send(HttpStatus.NOT_FOUND, response.message);
+    }
+    return Response.send(HttpStatus.BAD_REQUEST, response.message);
+  }
+
+  @UseGuards(AppGuard)
+  @Delete('/client/:userId')
+  async deleteClient(
+    @Param('userId') userId: number,
+    @Headers('Authorization') token: string,
+  ): Promise<ApiResponse> {
+    const clientId = Number(userId);
+    if (!clientId || isNaN(clientId)) {
+      return Response.send(HttpStatus.BAD_REQUEST, Messages.ClientNotFound);
+    }
+
+    const authToken = token && token.substring(7);
+    const userResponse =
+      await this.userService.authenticatedUserByToken(authToken);
+    if (!userResponse.success)
+      return Response.send(
+        HttpStatus.UNAUTHORIZED,
+        userResponse.message,
+        userResponse.payload,
+      );
+
+    const user = userResponse.payload;
+
+    const response = await this.userService.deleteClient(user, clientId);
+    if (response.success) {
+      return response;
+    }
+    if (response.message === Messages.NoPermission) {
+      return Response.send(HttpStatus.FORBIDDEN, response.message);
+    }
+    if (response.message === Messages.ClientNotFound) {
+      return Response.send(HttpStatus.NOT_FOUND, response.message);
     }
     return Response.send(HttpStatus.BAD_REQUEST, response.message);
   }

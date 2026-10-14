@@ -10,6 +10,9 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../user.schema';
+import { Estate } from '../property/estate.schema';
+import { Layout } from '../property/layout.schema';
+import { ExpenseTargetType } from 'src/enums';
 
 @Entity({ name: 'expensess' })
 export class Expense {
@@ -21,6 +24,32 @@ export class Expense {
 
   @Column()
   category: string;
+
+  @Column({ default: ExpenseTargetType.OFFICE })
+  targetType: string;
+
+  @Column({ nullable: true })
+  estateId: number;
+
+  @ManyToOne(() => Estate, { nullable: true })
+  @JoinColumn({ name: 'estateId' })
+  estate: Estate;
+
+  @Column({ nullable: true })
+  layoutId: number;
+
+  @ManyToOne(() => Layout, { nullable: true })
+  @JoinColumn({ name: 'layoutId' })
+  layout: Layout;
+
+  @Column('text', { nullable: true })
+  officePurpose: string;
+
+  @Column('text', { nullable: true })
+  receipt: string;
+
+  @Column('simple-json', { nullable: true })
+  proofImages: string[];
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   amount: number;

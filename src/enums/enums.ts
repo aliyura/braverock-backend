@@ -301,3 +301,9 @@ export enum PettyCashDirection {
   INCOME = 'INCOME',
   EXPENDITURE = 'EXPENDITURE',
 }
+
+export enum ExpenseTargetType {
+  ESTATE = 'ESTATE',
+  LAYOUT = 'LAYOUT',
+  OFFICE = 'OFFICE',
+}
