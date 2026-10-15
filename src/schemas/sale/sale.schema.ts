@@ -59,10 +59,10 @@ export class Sale {
   @Column()
   phoneNumber: string;
 
-  @Column()
+  @Column({ nullable: true })
   dob: string;
 
-  @Column()
+  @Column({ nullable: true })
   maritalStatus: string;
 
   @Column()
@@ -75,10 +75,16 @@ export class Sale {
   countryOfOrigin: string;
 
   @Column({ nullable: true })
+  nationality: string;
+
+  @Column({ nullable: true })
   stateOfOrigin: string;
 
   @Column({ nullable: true })
   lgaOfOrigin: string;
+
+  @Column({ nullable: true })
+  cityOfOrigin: string;
 
   @Column('tinytext', { nullable: true })
   originAddress: string;

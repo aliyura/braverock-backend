@@ -32,19 +32,27 @@ export class UserDto {
 
   @IsOptional()
   @IsString()
-  countryOfOrigin: string;
+  countryOfOrigin?: string;
 
   @IsOptional()
   @IsString()
-  stateOfOrigin: string;
+  nationality?: string;
 
   @IsOptional()
   @IsString()
-  lgaOfOrigin: string;
+  stateOfOrigin?: string;
 
   @IsOptional()
   @IsString()
-  originAddress: string;
+  lgaOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  cityOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  originAddress?: string;
 
   // =============================
   // RESIDENTIAL INFORMATION
@@ -112,7 +120,11 @@ export class UserDto {
 
   @IsOptional()
   @IsString()
-  maritalStatus: string;
+  maritalStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  motherMaidenName?: string;
 
   @IsNotEmpty()
   @IsString()

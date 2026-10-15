@@ -245,34 +245,42 @@ export class SaleDto {
 
   @IsOptional()
   @IsString()
-  dob: string;
+  dob?: string;
 
   @IsOptional()
   @IsString()
-  maritalStatus: string;
+  maritalStatus?: string;
 
   @IsOptional()
   @IsString()
-  gender: string;
+  gender?: string;
 
   // =============================
   // ORIGIN INFORMATION
   // =============================
   @IsOptional()
   @IsString()
-  countryOfOrigin: string;
+  countryOfOrigin?: string;
 
   @IsOptional()
   @IsString()
-  stateOfOrigin: string;
+  nationality?: string;
 
   @IsOptional()
   @IsString()
-  lgaOfOrigin: string;
+  stateOfOrigin?: string;
 
   @IsOptional()
   @IsString()
-  originAddress: string;
+  lgaOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  cityOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  originAddress?: string;
 
   // =============================
   // RESIDENTIAL INFORMATION
@@ -289,7 +297,7 @@ export class SaleDto {
   @IsString()
   residentialCity?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialAddress?: string;
 
@@ -318,7 +326,7 @@ export class SaleDto {
 
   @IsOptional()
   @IsString()
-  motherMaidenName: string;
+  motherMaidenName?: string;
 
   // =============================
   // NEXT OF KIN
@@ -479,32 +487,40 @@ export class SaleInterestFormDto {
 
   @IsOptional()
   @IsString()
-  dob: string;
+  dob?: string;
 
   @IsOptional()
   @IsString()
-  maritalStatus: string;
+  maritalStatus?: string;
 
   @IsOptional()
   @IsString()
-  gender: string;
+  gender?: string;
 
   // ORIGIN INFORMATION
   @IsOptional()
   @IsString()
-  countryOfOrigin: string;
+  countryOfOrigin?: string;
 
   @IsOptional()
   @IsString()
-  stateOfOrigin: string;
+  nationality?: string;
 
   @IsOptional()
   @IsString()
-  lgaOfOrigin: string;
+  stateOfOrigin?: string;
 
   @IsOptional()
   @IsString()
-  originAddress: string;
+  lgaOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  cityOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  originAddress?: string;
 
   // RESIDENTIAL
   @IsOptional()
@@ -519,7 +535,7 @@ export class SaleInterestFormDto {
   @IsString()
   residentialCity?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialAddress?: string;
 
@@ -546,7 +562,7 @@ export class SaleInterestFormDto {
 
   @IsOptional()
   @IsString()
-  motherMaidenName: string;
+  motherMaidenName?: string;
 
   // NEXT OF KIN
   @IsOptional()
@@ -656,32 +672,40 @@ export class ClientDetailsDto {
 
   @IsOptional()
   @IsString()
-  dob: string;
+  dob?: string;
 
   @IsOptional()
   @IsString()
-  maritalStatus: string;
+  maritalStatus?: string;
 
   @IsOptional()
   @IsString()
-  gender: string;
+  gender?: string;
 
   // ORIGIN INFORMATION
   @IsOptional()
   @IsString()
-  countryOfOrigin: string;
+  countryOfOrigin?: string;
 
   @IsOptional()
   @IsString()
-  stateOfOrigin: string;
+  nationality?: string;
 
   @IsOptional()
   @IsString()
-  lgaOfOrigin: string;
+  stateOfOrigin?: string;
 
   @IsOptional()
   @IsString()
-  originAddress: string;
+  lgaOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  cityOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  originAddress?: string;
 
   // RESIDENTIAL
   @IsOptional()
@@ -696,7 +720,7 @@ export class ClientDetailsDto {
   @IsString()
   residentialCity?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialAddress?: string;
 
@@ -723,7 +747,7 @@ export class ClientDetailsDto {
 
   @IsOptional()
   @IsString()
-  motherMaidenName: string;
+  motherMaidenName?: string;
 
   // NEXT OF KIN
   @IsOptional()

@@ -157,6 +157,10 @@ export class SaleService {
       userType: sale.clientType,
       companyName: sale.companyName,
 
+      dob: sale.dob,
+      maritalStatus: sale.maritalStatus,
+      motherMaidenName: sale.motherMaidenName,
+
       // ✅ UPDATED — correct residential fields
       residentialCountry: sale.residentialCountry,
       residentialState: sale.residentialState,
@@ -164,9 +168,11 @@ export class SaleService {
       residentialAddress: sale.residentialAddress,
 
       // origin details
-      countryOfOrigin: sale.countryOfOrigin,
+      countryOfOrigin: sale.countryOfOrigin || sale.nationality,
+      nationality: sale.nationality || sale.countryOfOrigin,
       stateOfOrigin: sale.stateOfOrigin,
-      lgaOfOrigin: sale.lgaOfOrigin,
+      lgaOfOrigin: sale.lgaOfOrigin || sale.cityOfOrigin,
+      cityOfOrigin: sale.cityOfOrigin || sale.lgaOfOrigin,
       originAddress: sale.originAddress,
     } as unknown as User;
 
@@ -287,7 +293,9 @@ export class SaleService {
       // origin fields
       stateOfOrigin: sale.stateOfOrigin,
       lgaOfOrigin: sale.lgaOfOrigin,
+      cityOfOrigin: sale.cityOfOrigin,
       countryOfOrigin: sale.countryOfOrigin,
+      nationality: sale.nationality,
       originAddress: sale.originAddress,
 
       // residential fields
@@ -392,6 +400,10 @@ export class SaleService {
 
       const saleRequest = {
         ...requestDto,
+        countryOfOrigin: requestDto.countryOfOrigin || requestDto.nationality,
+        nationality: requestDto.nationality || requestDto.countryOfOrigin,
+        lgaOfOrigin: requestDto.lgaOfOrigin || requestDto.cityOfOrigin,
+        cityOfOrigin: requestDto.cityOfOrigin || requestDto.lgaOfOrigin,
         transactionRef: Helpers.getTransactionRef(),
         code: Helpers.getCode(),
         createdById: authenticatedUser.id,
@@ -537,6 +549,10 @@ export class SaleService {
 
       const saleRequest = {
         ...requestDto,
+        countryOfOrigin: requestDto.countryOfOrigin || requestDto.nationality,
+        nationality: requestDto.nationality || requestDto.countryOfOrigin,
+        lgaOfOrigin: requestDto.lgaOfOrigin || requestDto.cityOfOrigin,
+        cityOfOrigin: requestDto.cityOfOrigin || requestDto.lgaOfOrigin,
         transactionRef: Helpers.getTransactionRef(),
         propertyPayable: property.price,
         code: Helpers.getCode(),

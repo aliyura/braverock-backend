@@ -73,10 +73,16 @@ export class User {
   countryOfOrigin: string;
 
   @Column({ nullable: true })
+  nationality: string;
+
+  @Column({ nullable: true })
   stateOfOrigin: string;
 
   @Column({ nullable: true })
   lgaOfOrigin: string;
+
+  @Column({ nullable: true })
+  cityOfOrigin: string;
 
   @Column('tinytext', { nullable: true })
   originAddress: string;
@@ -93,6 +99,9 @@ export class User {
 
   @Column({ nullable: true })
   residentialAddress: string;
+
+  @Column({ nullable: true })
+  motherMaidenName: string;
 
   // Government ID
   @Column({ nullable: true })
