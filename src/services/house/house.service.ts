@@ -501,7 +501,6 @@ export class HouseService {
 
       const requiredFilter = {
         visibility: PropertyVisibility.PUBLIC,
-        status: StateStatus.AVAILABLE,
       };
       const query = Helpers.buildFilteredQuery(filterDto, requiredFilter);
 
@@ -572,7 +571,6 @@ export class HouseService {
 
       const requiredFilter = {
         visibility: PropertyVisibility.PUBLIC,
-        status: StateStatus.AVAILABLE,
       };
       const query = Helpers.buildSearchQuery(
         searchString,
