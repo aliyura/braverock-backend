@@ -181,11 +181,11 @@ export class UserDto {
   @IsString()
   thumbnail?: string;
 
-  @IsOptional()
-  documents?: {
-    type: string;
-    fileUrl: string;
-  }[];
+  // @IsOptional()
+  // documents?: {
+  //   type: string;
+  //   fileUrl: string;
+  // }[];
 }
 
 export class UpdateUserDto extends PartialType(UserDto) {
@@ -198,11 +198,11 @@ export class UpdateUserDto extends PartialType(UserDto) {
   @IsOptional()
   thumbnail?: string;
 
-  @IsOptional()
-  documents?: {
-    type: string;
-    fileUrl: string;
-  }[];
+  // @IsOptional()
+  // documents?: {
+  //   type: string;
+  //   fileUrl: string;
+  // }[];
 }
 
 export class CreateClientDto extends UserDto {}
