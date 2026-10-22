@@ -236,6 +236,7 @@ export class EstateController {
         filter,
       );
       if (result.success) return result;
+      return Response.send(HttpStatus.NOT_FOUND, result.message);
     }
   }
 
@@ -273,6 +274,7 @@ export class EstateController {
         filter,
       );
       if (result.success) return result;
+      return Response.send(HttpStatus.NOT_FOUND, result.message);
     }
   }
 }

@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 import { ExpenseTargetType } from 'src/enums';
 
@@ -19,6 +20,7 @@ export class ExpenseDto {
   description?: string;
 
   @IsNotEmpty()
+  @Type(() => Number)
   @IsNumber()
   amount: number;
 
@@ -31,10 +33,16 @@ export class ExpenseDto {
   targetType: string;
 
   @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   estateId?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   layoutId?: number;
 

@@ -167,15 +167,6 @@ export class ClientController {
   }
 
   @UseGuards(AppGuard)
-  @Get('/:id')
-  async getClientById(
-    @Param('id') id: number,
-    @Headers('Authorization') token: string,
-  ): Promise<ApiResponse> {
-    return this.getClientDetails(id, token);
-  }
-
-  @UseGuards(AppGuard)
   @Get('/list')
   async getAllClients(
     @Query('page') page: number,
@@ -239,5 +230,14 @@ export class ClientController {
       return Response.send(HttpStatus.FORBIDDEN, clients.message);
     }
     return Response.send(HttpStatus.NOT_FOUND, clients.message);
+  }
+
+  @UseGuards(AppGuard)
+  @Get('/:id')
+  async getClientById(
+    @Param('id') id: number,
+    @Headers('Authorization') token: string,
+  ): Promise<ApiResponse> {
+    return this.getClientDetails(id, token);
   }
 }

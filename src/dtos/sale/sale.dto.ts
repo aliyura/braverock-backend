@@ -243,7 +243,7 @@ export class SaleDto {
   @IsString()
   phoneNumber: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   dob?: string;
 
@@ -297,7 +297,7 @@ export class SaleDto {
   @IsString()
   residentialCity?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   residentialAddress?: string;
 
@@ -485,7 +485,7 @@ export class SaleInterestFormDto {
   @IsString()
   phoneNumber: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   dob?: string;
 
@@ -535,7 +535,7 @@ export class SaleInterestFormDto {
   @IsString()
   residentialCity?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   residentialAddress?: string;
 
@@ -670,7 +670,7 @@ export class ClientDetailsDto {
   @IsString()
   phoneNumber: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   dob?: string;
 
@@ -720,7 +720,7 @@ export class ClientDetailsDto {
   @IsString()
   residentialCity?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   residentialAddress?: string;
 

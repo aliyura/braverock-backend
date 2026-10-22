@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as xlsx from 'xlsx';
 import * as formatCurrency from 'format-currency';
 import { FilterDto } from 'src/dtos/filter.dto';
-import { Like } from 'typeorm';
+import { Between, LessThanOrEqual, Like, MoreThanOrEqual } from 'typeorm';
 
 export type HttpClient = (
   path: string,
@@ -23,7 +23,7 @@ export class Helpers {
   }
 
   static getManagementRoles(): any {
-    return ['ADMIN', 'SUPERADMIN', 'MANAGER', 'CUSTOMERCARE','ACCOUNTANT'];
+    return ['ADMIN', 'SUPERADMIN', 'MANAGER', 'CUSTOMERCARE', 'ACCOUNTANT'];
   }
   static getUniqueId(): string {
     const id = uuidv4();
@@ -58,16 +58,104 @@ export class Helpers {
     return `${day}${month}${hours}${minutes}${seconds}${year}`;
   }
 
-  static buildFilteredQuery(filter?: FilterDto, requiredFilter?: any) {
-    let query = requiredFilter ? requiredFilter : ({} as any);
+  /**
+   * Normalizes pagination input. Page numbers are zero-based to match the
+   * dashboard clients, while page sizes are bounded to a safe maximum.
+   */
+  static getPagination(page?: number | string, limit?: number | string) {
+    const parsedPage = Number(page);
+    const currentPage =
+      Number.isFinite(parsedPage) && parsedPage > 0
+        ? Math.floor(parsedPage)
+        : 0;
 
+    const defaultSize = Number(process.env.APP_PAGINATION_SIZE) || 15;
+    const parsedSize = Number(limit);
+    const size =
+      Number.isFinite(parsedSize) && parsedSize > 0
+        ? Math.min(Math.max(Math.floor(parsedSize), 1), 100)
+        : Math.min(defaultSize, 100);
+
+    return { currentPage, size, skip: currentPage * size };
+  }
+
+  /**
+   * Builds consistent pagination metadata for every paginated response.
+   */
+  static buildPaginationMeta(
+    currentPage: number,
+    size: number,
+    totalItems: number,
+  ) {
+    return {
+      size,
+      currentPage,
+      totalPages: totalItems > 0 ? Math.ceil(totalItems / size) : 0,
+      totalItems,
+    };
+  }
+
+  private static parseFilterDate(
+    value?: string,
+    endOfDay = false,
+  ): Date | undefined {
+    if (!value) return undefined;
+
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value).trim());
+    if (dateOnly) {
+      const date = new Date(
+        Number(dateOnly[1]),
+        Number(dateOnly[2]) - 1,
+        Number(dateOnly[3]),
+        endOfDay ? 23 : 0,
+        endOfDay ? 59 : 0,
+        endOfDay ? 59 : 0,
+        endOfDay ? 999 : 0,
+      );
+      return Number.isNaN(date.getTime()) ? undefined : date;
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return undefined;
+    if (endOfDay) date.setHours(23, 59, 59, 999);
+    return date;
+  }
+
+  /**
+   * Converts the shared from/to date filters into a createdAt range.
+   * The upper bound is inclusive for the whole day.
+   */
+  static buildDateRangeFilter(filter?: FilterDto): any | undefined {
+    const from = this.parseFilterDate(filter?.from);
+    const to = this.parseFilterDate(filter?.to, true);
+
+    if (from && to) return Between(from, to);
+    if (from) return MoreThanOrEqual(from);
+    if (to) return LessThanOrEqual(to);
+    return undefined;
+  }
+
+  private static applyFilters(
+    condition: any,
+    filter?: FilterDto,
+    dateRange?: any,
+  ): any {
     if (filter) {
       Object.entries(filter).forEach(([key, value]) => {
+        if (key === 'from' || key === 'to') return;
         if (value !== undefined && value !== null && value !== '') {
-          query[key] = value;
+          condition[key] = value;
         }
       });
     }
+
+    if (dateRange) condition.createdAt = dateRange;
+    return condition;
+  }
+
+  static buildFilteredQuery(filter?: FilterDto, requiredFilter?: any) {
+    const query = requiredFilter ? { ...requiredFilter } : ({} as any);
+    this.applyFilters(query, filter, this.buildDateRangeFilter(filter));
     return query;
   }
 
@@ -78,40 +166,28 @@ export class Helpers {
     requiredFilter?: any,
   ): any {
     const query = [];
-    let baseCondition: any = requiredFilter ? requiredFilter : {};
+    const baseCondition: any = requiredFilter ? { ...requiredFilter } : {};
+    const searchText =
+      typeof searchString === 'string' ? searchString.trim() : searchString;
+    const dateRange = this.buildDateRangeFilter(filter);
 
     // Build dynamic queries for searchText + strict filters
-    if (searchString) {
-      const searchLike = Like(`%${searchString}%`);
+    if (searchText) {
+      const searchLike = Like(`%${searchText}%`);
 
       for (const field of targetFields) {
-        const condition: any = {
-          ...baseCondition,
-          [field]: searchLike,
-        };
-
-        if (filter) {
-          Object.entries(filter).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
-              condition[key] = value;
-            }
-          });
-        }
-        query.push(condition);
+        query.push(
+          this.applyFilters(
+            { ...baseCondition, [field]: searchLike },
+            filter,
+            dateRange,
+          ),
+        );
       }
+    } else {
+      query.push(this.applyFilters({ ...baseCondition }, filter, dateRange));
     }
 
-    if (!searchString) {
-      const condition: any = { ...baseCondition };
-      if (filter) {
-        Object.entries(filter).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            condition[key] = value;
-          }
-        });
-      }
-      query.push(condition);
-    }
     return query;
   }
 

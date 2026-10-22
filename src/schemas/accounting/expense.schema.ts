@@ -28,6 +28,9 @@ export class Expense {
   @Column({ default: ExpenseTargetType.OFFICE })
   targetType: string;
 
+  @Column({ default: 'PENDING' })
+  status: string;
+
   @Column({ nullable: true })
   estateId: number;
 

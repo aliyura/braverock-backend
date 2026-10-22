@@ -298,8 +298,8 @@ export class ExpenseService {
       if (filterDto.category) query.category = filterDto.category;
       if (filterDto.status) query.status = filterDto.status;
       if (filterDto.targetType) query.targetType = filterDto.targetType;
-      if (filterDto.estateId) query.estateId = filterDto.estateId;
-      if (filterDto.layoutId) query.layoutId = filterDto.layoutId;
+      if (filterDto.estateId) query.estateId = Number(filterDto.estateId);
+      if (filterDto.layoutId) query.layoutId = Number(filterDto.layoutId);
 
       const [result, count] = await this.expenseRepo.findAndCount({
         where: query,
@@ -376,52 +376,43 @@ export class ExpenseService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
       const skip = page > 0 ? Number(page) : 0;
 
-      var query = [] as any;
+      const baseQuery = {} as any;
 
-      if (filterDto.category) {
-        query = [
-          { title: Like(`%${searchString}%`), category: filterDto.category },
-          {
-            description: Like(`%${searchString}%`),
-            category: filterDto.category,
-          },
-          {
-            officePurpose: Like(`%${searchString}%`),
-            category: filterDto.category,
-          },
-          { amount: Like(`%${searchString}%`), category: filterDto.category },
-          { category: filterDto.category },
-        ];
+      if (filterDto.from || filterDto.to) {
+        baseQuery.createdAt = Between(
+          Helpers.formatDate(
+            new Date(filterDto.from ?? Helpers.formatDate(new Date())),
+          ),
+          Helpers.formatToNextDay(
+            new Date(filterDto.to ?? Helpers.formatDate(new Date())),
+          ),
+        );
       }
-      if (filterDto.status) {
-        query = [
-          { title: Like(`%${searchString}%`), status: filterDto.status },
-          { description: Like(`%${searchString}%`), status: filterDto.status },
-          { officePurpose: Like(`%${searchString}%`), status: filterDto.status },
-          { amount: Like(`%${searchString}%`), status: filterDto.status },
-          { category: Like(`%${searchString}%`), status: filterDto.status },
-        ];
-      }
-      if (filterDto.targetType) {
-        query = [
-          { title: Like(`%${searchString}%`), targetType: filterDto.targetType },
-          { description: Like(`%${searchString}%`), targetType: filterDto.targetType },
-          { officePurpose: Like(`%${searchString}%`), targetType: filterDto.targetType },
-          { targetType: filterDto.targetType },
-        ];
-      }
+      if (filterDto.category) baseQuery.category = filterDto.category;
+      if (filterDto.status) baseQuery.status = filterDto.status;
+      if (filterDto.targetType) baseQuery.targetType = filterDto.targetType;
+      if (filterDto.estateId)
+        baseQuery.estateId = Number(filterDto.estateId);
+      if (filterDto.layoutId)
+        baseQuery.layoutId = Number(filterDto.layoutId);
 
-      if (searchString && query.length <= 0) {
-        query.push({ title: Like(`%${searchString}%`) });
-        query.push({ description: Like(`%${searchString}%`) });
-        query.push({ officePurpose: Like(`%${searchString}%`) });
-        query.push({ amount: Like(`%${searchString}%`) });
-        query.push({ category: Like(`%${searchString}%`) });
-        query.push({ targetType: Like(`%${searchString}%`) });
+      const searchFields = [
+        'title',
+        'description',
+        'officePurpose',
+        'amount',
+        'category',
+        'targetType',
+      ];
+      const query = [] as any;
+      if (searchString) {
+        for (const field of searchFields) {
+          query.push({ ...baseQuery, [field]: Like(`%${searchString}%`) });
+        }
       }
 
       const [result, count] = await this.expenseRepo.findAndCount({
-        where: query,
+        where: query.length ? query : baseQuery,
         relations: { createdBy: true, estate: true, layout: true },
         order: { createdAt: 'DESC' },
         take: size,

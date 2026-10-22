@@ -57,11 +57,11 @@ export class LayoutDto {
   @IsOptional()
   @IsString()
   description: string;
-}
-export class UpdateLayoutDto extends PartialType(LayoutDto) {
+
   @IsOptional()
   @IsEnum(PropertyVisibility, {
     message: 'Visibility must be PRIVATE | PUBLIC',
   })
   visibility: PropertyVisibility;
 }
+export class UpdateLayoutDto extends PartialType(LayoutDto) {}

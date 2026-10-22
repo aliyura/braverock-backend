@@ -157,15 +157,6 @@ export class ExpenseController {
   }
 
   @UseGuards(AppGuard)
-  @Get('/:expenseId')
-  async getExpenseById(
-    @Param('expenseId') expenseId: number,
-    @Headers('Authorization') token: string,
-  ): Promise<ApiResponse> {
-    return this.getExpenseDetails(expenseId, token);
-  }
-
-  @UseGuards(AppGuard)
   @Get('/list')
   async getAllExpenses(
     @Query('page') page: number,
@@ -225,5 +216,14 @@ export class ExpenseController {
     );
     if (result.success) return result;
     return Response.send(HttpStatus.NOT_FOUND, result.message);
+  }
+
+  @UseGuards(AppGuard)
+  @Get('/:expenseId')
+  async getExpenseById(
+    @Param('expenseId') expenseId: number,
+    @Headers('Authorization') token: string,
+  ): Promise<ApiResponse> {
+    return this.getExpenseDetails(expenseId, token);
   }
 }

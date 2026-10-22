@@ -77,11 +77,11 @@ export class PlotDto {
   @IsOptional()
   @IsNumber()
   developmentFee: number;
-}
-export class UpdatePlotDto extends PartialType(PlotDto) {
+
   @IsOptional()
   @IsEnum(PropertyVisibility, {
     message: 'Visibility must be PRIVATE | PUBLIC',
   })
   visibility: PropertyVisibility;
 }
+export class UpdatePlotDto extends PartialType(PlotDto) {}

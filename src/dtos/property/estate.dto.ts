@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsEnum,
   IsLatLong,
   IsNotEmpty,
   IsNumber,
@@ -7,6 +8,7 @@ import {
   IsString,
 } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
+import { PropertyVisibility } from 'src/enums';
 
 export class EstateDto {
   @IsNotEmpty()
@@ -68,6 +70,12 @@ export class EstateDto {
   @IsOptional()
   @IsString()
   description: string;
+
+  @IsOptional()
+  @IsEnum(PropertyVisibility, {
+    message: 'Visibility must be PRIVATE | PUBLIC',
+  })
+  visibility: PropertyVisibility;
 }
 export class UpdateEstateDto extends PartialType(EstateDto) {}
 

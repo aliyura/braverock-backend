@@ -232,11 +232,7 @@ export class EstateService {
     filterDto: FilterDto,
   ): Promise<ApiResponse> {
     try {
-      const size =
-        limit > 0
-          ? Number(limit)
-          : Number(process.env.APP_PAGINATION_SIZE) || 15;
-      const skip = page > 0 ? Number(page) : 0;
+      const { currentPage, size, skip } = Helpers.getPagination(page, limit);
 
       const query = Helpers.buildFilteredQuery(filterDto);
 
@@ -247,25 +243,14 @@ export class EstateService {
         where: query,
         order: { createdAt: 'DESC' },
         take: size,
-        skip: skip * size,
+        skip,
         relations: { engineer: true },
       });
 
-      if (result.length) {
-        const totalPages = Math.round(count / size);
-        return Response.success({
-          page: result,
-          size: size,
-          currentPage: Number(skip),
-          totalPages:
-            totalPages > 0
-              ? totalPages
-              : count > 0 && result.length > 0
-                ? 1
-                : 0,
-        });
-      }
-      return Response.failure(Messages.NoEstateFound);
+      return Response.success({
+        page: result,
+        ...Helpers.buildPaginationMeta(currentPage, size, count),
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -280,11 +265,7 @@ export class EstateService {
     filterDto: FilterDto,
   ): Promise<ApiResponse> {
     try {
-      const size =
-        limit > 0
-          ? Number(limit)
-          : Number(process.env.APP_PAGINATION_SIZE) || 15;
-      const skip = page > 0 ? Number(page) : 0;
+      const { currentPage, size, skip } = Helpers.getPagination(page, limit);
 
       const targetFields = [
         'name',
@@ -311,25 +292,14 @@ export class EstateService {
         where: query,
         order: { createdAt: 'DESC' },
         take: size,
-        skip: skip * size,
+        skip,
         relations: { engineer: true },
       });
 
-      if (result.length) {
-        const totalPages = Math.round(count / size);
-        return Response.success({
-          page: result,
-          size: size,
-          currentPage: Number(skip),
-          totalPages:
-            totalPages > 0
-              ? totalPages
-              : count > 0 && result.length > 0
-                ? 1
-                : 0,
-        });
-      }
-      return Response.failure(Messages.NoEstateFound);
+      return Response.success({
+        page: result,
+        ...Helpers.buildPaginationMeta(currentPage, size, count),
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -342,11 +312,7 @@ export class EstateService {
     filterDto: FilterDto,
   ): Promise<ApiResponse> {
     try {
-      const size =
-        limit > 0
-          ? Number(limit)
-          : Number(process.env.APP_PAGINATION_SIZE) || 15;
-      const skip = page > 0 ? Number(page) : 0;
+      const { currentPage, size, skip } = Helpers.getPagination(page, limit);
 
       const requiredFilter = { visibility: PropertyVisibility.PUBLIC } as any;
       const query = Helpers.buildFilteredQuery(filterDto, requiredFilter);
@@ -355,25 +321,14 @@ export class EstateService {
         where: query,
         order: { createdAt: 'DESC' },
         take: size,
-        skip: skip * size,
+        skip,
         relations: { engineer: true },
       });
 
-      if (result.length) {
-        const totalPages = Math.round(count / size);
-        return Response.success({
-          page: result,
-          size: size,
-          currentPage: Number(skip),
-          totalPages:
-            totalPages > 0
-              ? totalPages
-              : count > 0 && result.length > 0
-                ? 1
-                : 0,
-        });
-      }
-      return Response.failure(Messages.NoEstateFound);
+      return Response.success({
+        page: result,
+        ...Helpers.buildPaginationMeta(currentPage, size, count),
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -387,11 +342,7 @@ export class EstateService {
     filterDto: FilterDto,
   ): Promise<ApiResponse> {
     try {
-      const size =
-        limit > 0
-          ? Number(limit)
-          : Number(process.env.APP_PAGINATION_SIZE) || 15;
-      const skip = page > 0 ? Number(page) : 0;
+      const { currentPage, size, skip } = Helpers.getPagination(page, limit);
 
       const targetFields = [
         'name',
@@ -418,25 +369,14 @@ export class EstateService {
         where: query,
         order: { createdAt: 'DESC' },
         take: size,
-        skip: skip * size,
+        skip,
         relations: { engineer: true },
       });
 
-      if (result.length) {
-        const totalPages = Math.round(count / size);
-        return Response.success({
-          page: result,
-          size: size,
-          currentPage: Number(skip),
-          totalPages:
-            totalPages > 0
-              ? totalPages
-              : count > 0 && result.length > 0
-                ? 1
-                : 0,
-        });
-      }
-      return Response.failure(Messages.NoEstateFound);
+      return Response.success({
+        page: result,
+        ...Helpers.buildPaginationMeta(currentPage, size, count),
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);

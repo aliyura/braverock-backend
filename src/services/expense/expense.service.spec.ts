@@ -2,6 +2,7 @@ import { ExpenseService } from './expense.service';
 import { ExpenseTargetType } from 'src/enums';
 import { Messages } from 'src/utils/messages/messages';
 import { User } from 'src/schemas/user.schema';
+import { Like } from 'typeorm';
 
 describe('ExpenseService', () => {
   let service: ExpenseService;
@@ -291,6 +292,49 @@ describe('ExpenseService', () => {
         where: { id: 100 },
         relations: { createdBy: true, estate: true, layout: true },
       });
+    });
+  });
+
+  describe('findAllExpenses', () => {
+    it('should filter expenses by estateId', async () => {
+      expenseRepo.findAndCount.mockResolvedValue([
+        [{ id: 1, title: 'Road grading', estateId: 10 }],
+        1,
+      ]);
+      expenseRepo.sum.mockResolvedValue(500000);
+
+      const res = await service.findAllExpenses(mockUser, 0, 10, {
+        estateId: 10,
+      } as any);
+
+      expect(res.success).toBe(true);
+      expect(expenseRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { estateId: 10 } }),
+      );
+    });
+  });
+
+  describe('searchExpenses', () => {
+    it('should apply estateId together with the search term', async () => {
+      expenseRepo.findAndCount.mockResolvedValue([
+        [{ id: 1, title: 'Road grading', estateId: 10 }],
+        1,
+      ]);
+
+      const res = await service.searchExpenses(mockUser, 0, 10, 'road', {
+        estateId: 10,
+      } as any);
+
+      expect(res.success).toBe(true);
+      const options = expenseRepo.findAndCount.mock.calls[0][0];
+      expect(options.where).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            estateId: 10,
+            title: Like('%road%'),
+          }),
+        ]),
+      );
     });
   });
 });

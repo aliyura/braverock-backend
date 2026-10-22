@@ -357,11 +357,7 @@ export class HouseService {
     filterDto: FilterDto,
   ): Promise<ApiResponse> {
     try {
-      const size =
-        limit > 0
-          ? Number(limit)
-          : Number(process.env.APP_PAGINATION_SIZE) || 15;
-      const skip = page > 0 ? Number(page) : 0;
+      const { currentPage, size, skip } = Helpers.getPagination(page, limit);
 
       const query = Helpers.buildFilteredQuery(filterDto);
 
@@ -377,41 +373,30 @@ export class HouseService {
           reservedBy: true,
           reservation: true,
         },
-        skip: skip * size,
+        skip,
       });
 
-      if (result.length) {
-        const analytic = {
-          houses: await this.houseRepo.count({}),
-          available: await this.houseRepo.count({
-            where: { status: StateStatus.AVAILABLE },
-          }),
-          reserved: await this.houseRepo.count({
-            where: { status: StateStatus.RESERVED },
-          }),
-          sold: await this.houseRepo.count({
-            where: { status: StateStatus.SOLD },
-          }),
-          allocated: await this.houseRepo.count({
-            where: { status: StateStatus.ALLOCATED },
-          }),
-        };
-        const totalPages = Math.round(count / size);
+      const analytic = {
+        houses: await this.houseRepo.count({}),
+        available: await this.houseRepo.count({
+          where: { status: StateStatus.AVAILABLE },
+        }),
+        reserved: await this.houseRepo.count({
+          where: { status: StateStatus.RESERVED },
+        }),
+        sold: await this.houseRepo.count({
+          where: { status: StateStatus.SOLD },
+        }),
+        allocated: await this.houseRepo.count({
+          where: { status: StateStatus.ALLOCATED },
+        }),
+      };
 
-        return Response.success({
-          analytic,
-          page: result,
-          size: size,
-          currentPage: Number(skip),
-          totalPages:
-            totalPages > 0
-              ? totalPages
-              : count > 0 && result.length > 0
-                ? 1
-                : 0,
-        });
-      }
-      return Response.failure(Messages.NoHousesFound);
+      return Response.success({
+        analytic,
+        page: result,
+        ...Helpers.buildPaginationMeta(currentPage, size, count),
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -425,11 +410,7 @@ export class HouseService {
     filter: FilterDto,
   ): Promise<ApiResponse> {
     try {
-      const size =
-        limit > 0
-          ? Number(limit)
-          : Number(process.env.APP_PAGINATION_SIZE) || 15;
-      const skip = page > 0 ? Number(page) : 0;
+      const { currentPage, size, skip } = Helpers.getPagination(page, limit);
 
       const targetFields = [
         'type',
@@ -438,6 +419,7 @@ export class HouseService {
         'district',
         'locationType',
         'description',
+        'plotNumber',
         'houseNumber',
         'blockNumber',
         'buildingType',
@@ -455,7 +437,7 @@ export class HouseService {
         where: query,
         order: { createdAt: 'DESC' },
         take: size,
-        skip: skip * size,
+        skip,
         relations: {
           estate: true,
           client: true,
@@ -466,21 +448,10 @@ export class HouseService {
         },
       });
 
-      if (result.length) {
-        const totalPages = Math.round(count / size);
-        return Response.success({
-          page: result,
-          size: size,
-          currentPage: Number(skip),
-          totalPages:
-            totalPages > 0
-              ? totalPages
-              : count > 0 && result.length > 0
-                ? 1
-                : 0,
-        });
-      }
-      return Response.failure(Messages.NoHousesFound);
+      return Response.success({
+        page: result,
+        ...Helpers.buildPaginationMeta(currentPage, size, count),
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -493,11 +464,7 @@ export class HouseService {
     filterDto: FilterDto,
   ): Promise<ApiResponse> {
     try {
-      const size =
-        limit > 0
-          ? Number(limit)
-          : Number(process.env.APP_PAGINATION_SIZE) || 15;
-      const skip = page > 0 ? Number(page) : 0;
+      const { currentPage, size, skip } = Helpers.getPagination(page, limit);
 
       const requiredFilter = {
         visibility: PropertyVisibility.PUBLIC,
@@ -508,7 +475,7 @@ export class HouseService {
         where: query,
         order: { createdAt: 'DESC' },
         take: size,
-        skip: skip * size,
+        skip,
         relations: {
           estate: true,
           client: true,
@@ -519,21 +486,10 @@ export class HouseService {
         },
       });
 
-      if (result.length) {
-        const totalPages = Math.round(count / size);
-        return Response.success({
-          page: result,
-          size: size,
-          currentPage: Number(skip),
-          totalPages:
-            totalPages > 0
-              ? totalPages
-              : count > 0 && result.length > 0
-                ? 1
-                : 0,
-        });
-      }
-      return Response.failure(Messages.NoHousesFound);
+      return Response.success({
+        page: result,
+        ...Helpers.buildPaginationMeta(currentPage, size, count),
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -547,21 +503,16 @@ export class HouseService {
     filter: FilterDto,
   ): Promise<ApiResponse> {
     try {
-      const size =
-        limit > 0
-          ? Number(limit)
-          : Number(process.env.APP_PAGINATION_SIZE) || 15;
-      const skip = page > 0 ? Number(page) : 0;
+      const { currentPage, size, skip } = Helpers.getPagination(page, limit);
 
       const targetFields = [
-        'capacity',
-        'dimension',
         'type',
         'state',
         'lga',
         'district',
         'locationType',
         'description',
+        'plotNumber',
         'houseNumber',
         'blockNumber',
         'buildingType',
@@ -583,7 +534,7 @@ export class HouseService {
         where: query,
         order: { createdAt: 'DESC' },
         take: size,
-        skip: skip * size,
+        skip,
         relations: {
           createdBy: true,
           client: true,
@@ -593,21 +544,10 @@ export class HouseService {
         },
       });
 
-      if (result.length) {
-        const totalPages = Math.round(count / size);
-        return Response.success({
-          page: result,
-          size: size,
-          currentPage: Number(skip),
-          totalPages:
-            totalPages > 0
-              ? totalPages
-              : count > 0 && result.length > 0
-                ? 1
-                : 0,
-        });
-      }
-      return Response.failure(Messages.NoHousesFound);
+      return Response.success({
+        page: result,
+        ...Helpers.buildPaginationMeta(currentPage, size, count),
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);

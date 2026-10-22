@@ -122,16 +122,15 @@ export class HouseDto {
   @IsOptional()
   @IsString()
   design: string;
-}
-
-
-export class UpdateHouseDto extends PartialType(HouseDto) {
-  @IsOptional()
-  status: string;
 
   @IsOptional()
   @IsEnum(PropertyVisibility, {
     message: 'Visibility must be PRIVATE | PUBLIC',
   })
   visibility: PropertyVisibility;
+}
+
+export class UpdateHouseDto extends PartialType(HouseDto) {
+  @IsOptional()
+  status: string;
 }
