@@ -40,6 +40,13 @@ import { Messages } from 'src/utils/messages/messages';
 import { House } from 'src/schemas/property/house.schema';
 import { Plot } from 'src/schemas/property/plot.schema';
 import { Layout } from 'src/schemas/property/layout.schema';
+import { Allocation } from 'src/schemas/sale/allocation.schema';
+import { Offer } from 'src/schemas/sale/offer.schema';
+import { AuthorityLetter } from 'src/schemas/sale/authority-letter.schema';
+import { PaymentPlan } from 'src/schemas/sale/payment-plan.schema';
+import { AccountPayable } from 'src/schemas/accounting/account-payable.schema';
+import { AccountReceivable } from 'src/schemas/accounting/account-receivable.schema';
+import { SalesAccount } from 'src/schemas/accounting/sales-account.schema';
 
 @Injectable()
 export class SaleService {
@@ -61,6 +68,20 @@ export class SaleService {
     private readonly layouteRepo: Repository<Layout>,
     @InjectRepository(Reservation)
     private readonly reservationRepo: Repository<Reservation>,
+    @InjectRepository(Allocation)
+    private readonly allocationRepo: Repository<Allocation>,
+    @InjectRepository(Offer)
+    private readonly offerRepo: Repository<Offer>,
+    @InjectRepository(AuthorityLetter)
+    private readonly authorityLetterRepo: Repository<AuthorityLetter>,
+    @InjectRepository(PaymentPlan)
+    private readonly paymentPlanRepo: Repository<PaymentPlan>,
+    @InjectRepository(AccountPayable)
+    private readonly accountPayableRepo: Repository<AccountPayable>,
+    @InjectRepository(AccountReceivable)
+    private readonly accountReceivableRepo: Repository<AccountReceivable>,
+    @InjectRepository(SalesAccount)
+    private readonly salesAccountRepo: Repository<SalesAccount>,
     private readonly queueProducerService: ProducerService,
     private readonly cryptoService: CryptoService,
   ) {}
@@ -918,17 +939,125 @@ export class SaleService {
     authenticatedUser: User,
   ): Promise<ApiResponse> {
     try {
-      if (
-        authenticatedUser.role !== UserRole.ADMIN &&
-        authenticatedUser.role !== UserRole.SUPERADMIN &&
-        authenticatedUser.role !== UserRole.MANAGER &&
-        authenticatedUser.role !== UserRole.CUSTOMERCARE
-      ) {
+      if (!this.ensureManagementRole(authenticatedUser)) {
         return Response.failure(Messages.NoPermission);
       }
 
-      await this.saleRepo.delete(saleId);
-      await this.paymentRepo.delete({ saleId });
+      const id = Number(saleId);
+      const sale = await this.saleRepo.findOne({ where: { id } });
+      if (!sale) return Response.failure(Messages.SaleNotAvailable);
+
+      // Break circular foreign key references on the sale row first
+      await this.saleRepo.update(
+        { id: sale.id },
+        {
+          allocationId: null,
+          offerId: null,
+          authorityLetterId: null,
+          paymentPlanId: null,
+          reservationId: null,
+          houseId: null,
+          plotId: null,
+        },
+      );
+
+      // Restore linked property availability and sold counters
+      if (sale.propertyType === PropertyType.HOUSE) {
+        const houseId = sale.houseId || sale.propertyId;
+        if (houseId) {
+          const house = await this.houseRepo.findOne({
+            where: { id: houseId },
+          });
+          if (
+            house &&
+            (house.saleId === sale.id || house.status === StateStatus.SOLD)
+          ) {
+            house.status = StateStatus.AVAILABLE;
+            house.saleId = null;
+            house.clientId = null;
+            await this.houseRepo.save(house);
+
+            if (house.estateId) {
+              const estate = await this.estateRepo.findOne({
+                where: { id: house.estateId },
+              });
+              if (estate && estate.soldHouses > 0) {
+                estate.soldHouses = Math.max(0, Number(estate.soldHouses) - 1);
+                await this.estateRepo.save(estate);
+              }
+            }
+          }
+        }
+      } else if (sale.propertyType === PropertyType.PLOT) {
+        const plotId = sale.plotId || sale.propertyId;
+        if (plotId) {
+          const plot = await this.plotRepo.findOne({
+            where: { id: plotId },
+          });
+          if (
+            plot &&
+            (plot.saleId === sale.id || plot.status === StateStatus.SOLD)
+          ) {
+            plot.status = StateStatus.AVAILABLE;
+            plot.saleId = null;
+            plot.clientId = null;
+            await this.plotRepo.save(plot);
+
+            if (plot.locationType === LocationType.ESTATE && plot.estateId) {
+              const estate = await this.estateRepo.findOne({
+                where: { id: plot.estateId },
+              });
+              if (estate && estate.soldPlots > 0) {
+                estate.soldPlots = Math.max(0, Number(estate.soldPlots) - 1);
+                await this.estateRepo.save(estate);
+              }
+            }
+
+            if (plot.locationType === LocationType.LAYOUT && plot.layoutId) {
+              const layout = await this.layouteRepo.findOne({
+                where: { id: plot.layoutId },
+              });
+              if (layout && layout.soldPlots > 0) {
+                layout.soldPlots = Math.max(0, Number(layout.soldPlots) - 1);
+                await this.layouteRepo.save(layout);
+              }
+            }
+          }
+        }
+      }
+
+      // Clear any remaining property references to this saleId
+      await this.houseRepo.update(
+        { saleId: sale.id },
+        { saleId: null, clientId: null, status: StateStatus.AVAILABLE },
+      );
+      await this.plotRepo.update(
+        { saleId: sale.id },
+        { saleId: null, clientId: null, status: StateStatus.AVAILABLE },
+      );
+
+      // Hard-delete dependent sale child records and detach accounting references
+      await this.paymentRepo.delete({ saleId: sale.id });
+      await this.paymentPlanRepo.delete({ saleId: sale.id });
+      await this.allocationRepo.delete({ saleId: sale.id });
+      await this.offerRepo.delete({ saleId: sale.id });
+      await this.authorityLetterRepo.delete({ saleId: sale.id });
+      await this.accountPayableRepo.update(
+        { saleId: sale.id },
+        { saleId: null },
+      );
+      await this.accountReceivableRepo.update(
+        { saleId: sale.id },
+        { saleId: null },
+      );
+      await this.salesAccountRepo.update(
+        { saleId: sale.id },
+        { saleId: null },
+      );
+
+      // Hard-delete the sale record from the database
+      await this.saleRepo.delete(sale.id);
+
 
       return Response.success(Messages.DeletedSuccessfully);
     } catch (ex) {

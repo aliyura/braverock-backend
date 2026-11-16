@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as NodeCache from 'node-cache';
 import * as ExcelJS from 'exceljs';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { validate } from 'class-validator';
 import { ApiResponse } from 'src/dtos/ApiResponse.dto';
 import { Response, Helpers } from 'src/helpers';
@@ -171,7 +171,10 @@ export class AttendanceService {
     try {
       const size = limit || 15;
       const skip = page || 0;
-      const where = Helpers.buildFilteredQuery(filter);
+      const where = {
+        ...Helpers.buildFilteredQuery(filter),
+        employee: { status: Not(StateStatus.DELETED) },
+      };
 
       const [result, count] = await this.attendanceRepo.findAndCount({
         where,
@@ -187,10 +190,23 @@ export class AttendanceService {
       const analytic = {
         total: count,
         present: await this.attendanceRepo.count({
-          where: { isAbsent: false },
+          where: {
+            isAbsent: false,
+            employee: { status: Not(StateStatus.DELETED) },
+          },
         }),
-        absent: await this.attendanceRepo.count({ where: { isAbsent: true } }),
-        late: await this.attendanceRepo.count({ where: { isLate: true } }),
+        absent: await this.attendanceRepo.count({
+          where: {
+            isAbsent: true,
+            employee: { status: Not(StateStatus.DELETED) },
+          },
+        }),
+        late: await this.attendanceRepo.count({
+          where: {
+            isLate: true,
+            employee: { status: Not(StateStatus.DELETED) },
+          },
+        }),
       };
 
       return Response.success({
@@ -280,7 +296,10 @@ export class AttendanceService {
 
   async exportAttendanceCsv(filter: FilterDto): Promise<ApiResponse> {
     try {
-      const where = Helpers.buildFilteredQuery(filter);
+      const where = {
+        ...Helpers.buildFilteredQuery(filter),
+        employee: { status: Not(StateStatus.DELETED) },
+      };
       const rows = await this.attendanceRepo.find({
         where,
         order: { date: 'DESC' },

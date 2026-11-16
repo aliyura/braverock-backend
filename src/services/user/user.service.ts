@@ -776,6 +776,31 @@ export class UserService {
       if (!user) return Response.failure(Messages.UserNotFound);
 
       const deletion = `_deleted${Helpers.getCode()}`;
+      const cleanEmail = user.emailAddress?.replace(/(_deleted\d+)+$/i, '');
+      const cleanPhone = user.phoneNumber?.replace(/(_deleted\d+)+$/i, '');
+
+      const employeeConditions = [
+        user.emailAddress ? { emailAddress: user.emailAddress } : null,
+        cleanEmail ? { emailAddress: cleanEmail } : null,
+        user.phoneNumber ? { phoneNumber: user.phoneNumber } : null,
+        cleanPhone ? { phoneNumber: cleanPhone } : null,
+      ].filter(Boolean) as any[];
+
+      if (employeeConditions.length > 0) {
+        const linkedEmployees = await this.employeeRepo.find({
+          where: employeeConditions,
+        });
+        for (const emp of linkedEmployees) {
+          emp.status = StateStatus.DELETED;
+          if (emp.emailAddress && !emp.emailAddress.includes('_deleted')) {
+            emp.emailAddress = `${emp.emailAddress}${deletion}`;
+          }
+          if (emp.phoneNumber && !emp.phoneNumber.includes('_deleted')) {
+            emp.phoneNumber = `${emp.phoneNumber}${deletion}`;
+          }
+          await this.employeeRepo.save(emp);
+        }
+      }
       user.status = StateStatus.DELETED;
       user.emailAddress = `${user.emailAddress}${deletion}`;
       user.phoneNumber = `${user.phoneNumber}${deletion}`;
@@ -1060,7 +1085,7 @@ export class UserService {
   async findByUserId(userId: number): Promise<ApiResponse> {
     try {
       const response = await this.userRepo.findOne({
-        where: { id: userId },
+        where: { id: userId, status: Not(StateStatus.DELETED) },
         relations: { createdBy: true },
       });
       if (response) return Response.success(response);
@@ -1187,7 +1212,10 @@ export class UserService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
       const skip = page > 0 ? Number(page) : 0;
 
-      const query = { role: Not(UserRole.CLIENT) } as any;
+      const query = {
+        role: Not(UserRole.CLIENT),
+        status: Not(StateStatus.DELETED),
+      } as any;
       if (authenticatedUser.role == UserRole.SUPERADMIN)
         query.id = Not(authenticatedUser.id);
 
@@ -1218,16 +1246,20 @@ export class UserService {
       if (result.length) {
         const analytic = {
           clients: await this.userRepo.count({
-            where: { role: UserRole.CLIENT },
+            where: { role: UserRole.CLIENT, status: Not(StateStatus.DELETED) },
           }),
           engineers: await this.userRepo.count({
-            where: { role: In([UserRole.SITEENGINEER, UserRole.LEADENGINEER]) },
+            where: {
+              role: In([UserRole.SITEENGINEER, UserRole.LEADENGINEER]),
+              status: Not(StateStatus.DELETED),
+            },
           }),
           agents: await this.userRepo.count({
-            where: { role: UserRole.AGENT },
+            where: { role: UserRole.AGENT, status: Not(StateStatus.DELETED) },
           }),
           others: await this.userRepo.count({
             where: {
+              status: Not(StateStatus.DELETED),
               role: Not(
                 In([
                   UserRole.CLIENT,
@@ -1276,7 +1308,10 @@ export class UserService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
       const skip = page > 0 ? Number(page) : 0;
 
-      const requiredQuery = { role: Not(UserRole.CLIENT) } as any;
+      const requiredQuery = {
+        role: Not(UserRole.CLIENT),
+        status: Not(StateStatus.DELETED),
+      } as any;
       if (authenticatedUser.role == UserRole.SUPERADMIN)
         requiredQuery.id = Not(authenticatedUser.id);
 

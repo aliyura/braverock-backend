@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as NodeCache from 'node-cache';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import * as ExcelJS from 'exceljs';
 import { validate } from 'class-validator';
 
@@ -229,6 +229,66 @@ export class EmployeeService {
     }
   }
 
+  private async syncDeletedUsersToEmployees(): Promise<void> {
+    try {
+      const deletedUsers = await this.userRepo.find({
+        where: { status: StateStatus.DELETED },
+        select: ['id', 'emailAddress', 'phoneNumber'],
+      });
+      if (!deletedUsers.length) return;
+
+      const emails = new Set<string>();
+      const phones = new Set<string>();
+
+      for (const u of deletedUsers) {
+        if (u.emailAddress) {
+          emails.add(u.emailAddress);
+          const cleanEmail = u.emailAddress.replace(/(_deleted\d+)+$/i, '');
+          if (cleanEmail) emails.add(cleanEmail);
+        }
+        if (u.phoneNumber) {
+          phones.add(u.phoneNumber);
+          const cleanPhone = u.phoneNumber.replace(/(_deleted\d+)+$/i, '');
+          if (cleanPhone) phones.add(cleanPhone);
+        }
+      }
+
+      const conditions: any[] = [];
+      if (emails.size > 0) {
+        conditions.push({
+          emailAddress: In(Array.from(emails)),
+          status: Not(StateStatus.DELETED),
+        });
+      }
+      if (phones.size > 0) {
+        conditions.push({
+          phoneNumber: In(Array.from(phones)),
+          status: Not(StateStatus.DELETED),
+        });
+      }
+
+      if (!conditions.length) return;
+
+      const staleEmployees = await this.employeeRepo.find({
+        where: conditions,
+      });
+
+      for (const emp of staleEmployees) {
+        const deletion = `_deleted${Helpers.getCode()}`;
+        emp.status = StateStatus.DELETED;
+        if (emp.emailAddress && !emp.emailAddress.includes('_deleted')) {
+          emp.emailAddress = `${emp.emailAddress}${deletion}`;
+        }
+        if (emp.phoneNumber && !emp.phoneNumber.includes('_deleted')) {
+          emp.phoneNumber = `${emp.phoneNumber}${deletion}`;
+        }
+        await this.employeeRepo.save(emp);
+      }
+    } catch (ex) {
+      console.log('Error syncing deleted users to employees:', ex);
+    }
+  }
+
   // ----------------------------------------------------------
   // DELETE EMPLOYEE
   // ----------------------------------------------------------
@@ -240,7 +300,46 @@ export class EmployeeService {
       if (!this.canManage(authenticatedUser))
         return Response.failure(Messages.NoPermission);
 
-      await this.employeeRepo.delete(id);
+      const employee = await this.employeeRepo.findOne({ where: { id } });
+      if (!employee) return Response.failure(Messages.EmployeeNotFound);
+
+      const deletion = `_deleted${Helpers.getCode()}`;
+      const cleanEmail = employee.emailAddress?.replace(/(_deleted\d+)+$/i, '');
+      const cleanPhone = employee.phoneNumber?.replace(/(_deleted\d+)+$/i, '');
+
+      const userConditions = [
+        employee.emailAddress ? { emailAddress: employee.emailAddress } : null,
+        cleanEmail ? { emailAddress: cleanEmail } : null,
+        employee.phoneNumber ? { phoneNumber: employee.phoneNumber } : null,
+        cleanPhone ? { phoneNumber: cleanPhone } : null,
+      ].filter(Boolean) as any[];
+
+      if (userConditions.length > 0) {
+        const linkedUsers = await this.userRepo.find({
+          where: userConditions,
+        });
+        for (const u of linkedUsers) {
+          u.status = StateStatus.DELETED;
+          if (u.emailAddress && !u.emailAddress.includes('_deleted')) {
+            u.emailAddress = `${u.emailAddress}${deletion}`;
+          }
+          if (u.phoneNumber && !u.phoneNumber.includes('_deleted')) {
+            u.phoneNumber = `${u.phoneNumber}${deletion}`;
+          }
+          u.notificationToken = null;
+          await this.userRepo.save(u);
+        }
+      }
+
+      employee.status = StateStatus.DELETED;
+      if (employee.emailAddress && !employee.emailAddress.includes('_deleted')) {
+        employee.emailAddress = `${employee.emailAddress}${deletion}`;
+      }
+      if (employee.phoneNumber && !employee.phoneNumber.includes('_deleted')) {
+        employee.phoneNumber = `${employee.phoneNumber}${deletion}`;
+      }
+      await this.employeeRepo.save(employee);
+
       return Response.success(Messages.DeletedSuccessfully);
     } catch (ex) {
       console.log(Messages.Exception, ex);
@@ -254,7 +353,7 @@ export class EmployeeService {
   async getEmployeeById(id: number): Promise<ApiResponse> {
     try {
       const employee = await this.employeeRepo.findOne({
-        where: { id },
+        where: { id, status: Not(StateStatus.DELETED) },
         relations: { createdBy: true },
       });
 
@@ -277,13 +376,17 @@ export class EmployeeService {
     filter: FilterDto,
   ): Promise<ApiResponse> {
     try {
+      await this.syncDeletedUsersToEmployees();
+
       const size =
         limit > 0
           ? Number(limit)
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
       const skip = page > 0 ? Number(page) : 0;
 
-      const where = Helpers.buildFilteredQuery(filter);
+      const where = Helpers.buildFilteredQuery(filter, {
+        status: Not(StateStatus.DELETED),
+      });
 
       const [result, count] = await this.employeeRepo.findAndCount({
         where,
@@ -298,7 +401,9 @@ export class EmployeeService {
       const totalPages = Math.round(count / size) || (count > 0 ? 1 : 0);
 
       const analytic = {
-        total: await this.employeeRepo.count(),
+        total: await this.employeeRepo.count({
+          where: { status: Not(StateStatus.DELETED) },
+        }),
         active: await this.employeeRepo.count({
           where: { status: StateStatus.ACTIVE },
         }),
@@ -331,6 +436,8 @@ export class EmployeeService {
     filter: FilterDto,
   ): Promise<ApiResponse> {
     try {
+      await this.syncDeletedUsersToEmployees();
+
       const size =
         limit > 0
           ? Number(limit)
@@ -353,6 +460,7 @@ export class EmployeeService {
         searchString,
         targetFields,
         filter,
+        { status: Not(StateStatus.DELETED) },
       );
 
       const [result, count] = await this.employeeRepo.findAndCount({
@@ -512,7 +620,11 @@ export class EmployeeService {
   // ----------------------------------------------------------
   async exportEmployeesCsv(filter: FilterDto): Promise<ApiResponse> {
     try {
-      const where = Helpers.buildFilteredQuery(filter);
+      await this.syncDeletedUsersToEmployees();
+
+      const where = Helpers.buildFilteredQuery(filter, {
+        status: Not(StateStatus.DELETED),
+      });
 
       const rows = await this.employeeRepo.find({
         where,
