@@ -230,7 +230,7 @@ export class AccountReceivableService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
 
       const skip = page > 0 ? Number(page) : 0;
-      const query = Helpers.buildFilteredQuery(filter);
+      const query = Helpers.buildFilteredQuery(filter, undefined, 'date');
 
       const [result, count] = await this.receivableRepo.findAndCount({
         where: query,
@@ -243,9 +243,9 @@ export class AccountReceivableService {
       if (!result.length) return Response.failure(Messages.NoRecordFound);
 
       const analytic = {
-        totalDebit: await this.receivableRepo.sum('debit'),
-        totalCredit: await this.receivableRepo.sum('credit'),
-        totalBalance: await this.receivableRepo.sum('balance'),
+        totalDebit: (await this.receivableRepo.sum('debit', query)) ?? 0,
+        totalCredit: (await this.receivableRepo.sum('credit', query)) ?? 0,
+        totalBalance: (await this.receivableRepo.sum('balance', query)) ?? 0,
       };
 
       const totalPages = Math.round(count / size);

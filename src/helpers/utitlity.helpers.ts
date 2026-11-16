@@ -95,7 +95,7 @@ export class Helpers {
     };
   }
 
-  private static parseFilterDate(
+  static parseFilterDate(
     value?: string,
     endOfDay = false,
   ): Date | undefined {
@@ -139,6 +139,7 @@ export class Helpers {
     condition: any,
     filter?: FilterDto,
     dateRange?: any,
+    dateField = 'createdAt',
   ): any {
     if (filter) {
       Object.entries(filter).forEach(([key, value]) => {
@@ -149,13 +150,22 @@ export class Helpers {
       });
     }
 
-    if (dateRange) condition.createdAt = dateRange;
+    if (dateRange) condition[dateField] = dateRange;
     return condition;
   }
 
-  static buildFilteredQuery(filter?: FilterDto, requiredFilter?: any) {
+  static buildFilteredQuery(
+    filter?: FilterDto,
+    requiredFilter?: any,
+    dateField = 'createdAt',
+  ) {
     const query = requiredFilter ? { ...requiredFilter } : ({} as any);
-    this.applyFilters(query, filter, this.buildDateRangeFilter(filter));
+    this.applyFilters(
+      query,
+      filter,
+      this.buildDateRangeFilter(filter),
+      dateField,
+    );
     return query;
   }
 
@@ -164,6 +174,7 @@ export class Helpers {
     targetFields: string[],
     filter?: FilterDto,
     requiredFilter?: any,
+    dateField = 'createdAt',
   ): any {
     const query = [];
     const baseCondition: any = requiredFilter ? { ...requiredFilter } : {};
@@ -181,11 +192,14 @@ export class Helpers {
             { ...baseCondition, [field]: searchLike },
             filter,
             dateRange,
+            dateField,
           ),
         );
       }
     } else {
-      query.push(this.applyFilters({ ...baseCondition }, filter, dateRange));
+      query.push(
+        this.applyFilters({ ...baseCondition }, filter, dateRange, dateField),
+      );
     }
 
     return query;
@@ -267,14 +281,9 @@ export class Helpers {
   }
 
   static formatToNextDay(t: Date): string {
-    const day = ('0' + t.getDate()).slice(-2);
-    const month = ('0' + (t.getMonth() + 1)).slice(-2);
-    const year = t.getFullYear();
-    const today = new Date();
-    const todayDate = ('0' + today.getDate()).slice(-2);
-    let nextDay = day;
-    if (day == todayDate) nextDay = (Number(day) + 1).toString();
-    return `${year}-${month}-${nextDay}`;
+    const next = new Date(t);
+    next.setDate(next.getDate() + 1);
+    return this.formatDate(next);
   }
 
   static capitalize(value: string): string {

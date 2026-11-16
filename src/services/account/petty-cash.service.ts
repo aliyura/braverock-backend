@@ -241,7 +241,7 @@ export class PettyCashService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
 
       const skip = page > 0 ? Number(page) : 0;
-      const query = Helpers.buildFilteredQuery(filter);
+      const query = Helpers.buildFilteredQuery(filter, undefined, 'date');
 
       const [result, count] = await this.pettyCashRepo.findAndCount({
         where: query,
@@ -254,10 +254,12 @@ export class PettyCashService {
       if (!result.length) return Response.failure(Messages.NoRecordFound);
 
       const income = await this.pettyCashRepo.sum('amount', {
+        ...query,
         direction: PettyCashDirection.INCOME,
       } as any);
 
       const expenditure = await this.pettyCashRepo.sum('amount', {
+        ...query,
         direction: PettyCashDirection.EXPENDITURE,
       } as any);
 

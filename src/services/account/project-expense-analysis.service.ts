@@ -260,7 +260,7 @@ export class ProjectExpenseAnalysisService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
 
       const skip = page > 0 ? Number(page) : 0;
-      const query = Helpers.buildFilteredQuery(filter);
+      const query = Helpers.buildFilteredQuery(filter, undefined, 'date');
 
       const [result, count] = await this.expenseRepo.findAndCount({
         where: query,
@@ -274,7 +274,8 @@ export class ProjectExpenseAnalysisService {
 
       const analytic = {
         total: count,
-        totalAnalyzedAmount: await this.expenseRepo.sum('amountAnalyzed'),
+        totalAnalyzedAmount:
+          (await this.expenseRepo.sum('amountAnalyzed', query)) ?? 0,
       };
 
       const totalPages = Math.round(count / size);
@@ -315,6 +316,8 @@ export class ProjectExpenseAnalysisService {
         searchString,
         targetFields,
         filter,
+        undefined,
+        'date',
       );
 
       const [result, count] = await this.expenseRepo.findAndCount({

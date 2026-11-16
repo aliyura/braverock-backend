@@ -271,6 +271,81 @@ export class ExpenseService {
     }
   }
 
+  private async buildExpenseAnalytics(
+    baseFilter: any,
+    filterDto?: FilterDto,
+  ) {
+    const now = new Date();
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    const todayEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
+
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+    const filterFrom = Helpers.parseFilterDate(filterDto?.from, false);
+    const filterTo = Helpers.parseFilterDate(filterDto?.to, true);
+    const dateRange = Helpers.buildDateRangeFilter(filterDto);
+
+    const sumInWindow = async (winStart: Date, winEnd: Date) => {
+      const start =
+        filterFrom && filterFrom > winStart ? filterFrom : winStart;
+      const end = filterTo && filterTo < winEnd ? filterTo : winEnd;
+      if (start > end) return 0;
+      return (
+        (await this.expenseRepo.sum('amount', {
+          ...baseFilter,
+          date: Between(start, end),
+        })) ?? 0
+      );
+    };
+
+    const totalQuery = dateRange
+      ? { ...baseFilter, date: dateRange }
+      : { ...baseFilter };
+
+    return {
+      totalAmount: (await this.expenseRepo.sum('amount', totalQuery)) ?? 0,
+      totalToday: await sumInWindow(todayStart, todayEnd),
+      totalThisMonth: await sumInWindow(startOfMonth, endOfMonth),
+      totalThisYear: await sumInWindow(startOfYear, endOfYear),
+    };
+  }
+
   async findAllExpenses(
     authenticatedUser: User,
     page: number,
@@ -283,65 +358,31 @@ export class ExpenseService {
           ? Number(limit)
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
       const skip = page > 0 ? Number(page) : 0;
-      const query = {} as any;
+      const baseFilter = {} as any;
 
-      if (filterDto.from || filterDto.to) {
-        query.createdAt = Between(
-          Helpers.formatDate(
-            new Date(filterDto.from ?? Helpers.formatDate(new Date())),
-          ),
-          Helpers.formatToNextDay(
-            new Date(filterDto.to ?? Helpers.formatDate(new Date())),
-          ),
-        );
-      }
-      if (filterDto.category) query.category = filterDto.category;
-      if (filterDto.status) query.status = filterDto.status;
-      if (filterDto.targetType) query.targetType = filterDto.targetType;
-      if (filterDto.estateId) query.estateId = Number(filterDto.estateId);
-      if (filterDto.layoutId) query.layoutId = Number(filterDto.layoutId);
+      if (filterDto.category) baseFilter.category = filterDto.category;
+      if (filterDto.status) baseFilter.status = filterDto.status;
+      if (filterDto.targetType) baseFilter.targetType = filterDto.targetType;
+      if (filterDto.estateId) baseFilter.estateId = Number(filterDto.estateId);
+      if (filterDto.layoutId) baseFilter.layoutId = Number(filterDto.layoutId);
+
+      const dateRange = Helpers.buildDateRangeFilter(filterDto);
+      const query = dateRange
+        ? { ...baseFilter, date: dateRange }
+        : { ...baseFilter };
 
       const [result, count] = await this.expenseRepo.findAndCount({
         where: query,
         relations: { createdBy: true, estate: true, layout: true },
-        order: { createdAt: 'DESC' },
+        order: { date: 'DESC', createdAt: 'DESC' },
         take: size,
         skip: skip * size,
       });
 
+      const analytic = await this.buildExpenseAnalytics(baseFilter, filterDto);
+
       if (result.length) {
-        const todayStart = new Date(
-          new Date().getFullYear(),
-          new Date().getMonth(),
-          new Date().getDate(),
-        );
-
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const startOfYear = new Date(new Date().getFullYear(), 0, 1);
-        startOfYear.setHours(0, 0, 0, 0);
-
-        const analytic = {
-          totalAmount: (await this.expenseRepo.sum('amount', query)) ?? 0,
-          totalToday:
-            (await this.expenseRepo.sum('amount', {
-              ...query,
-              createdAt: MoreThanOrEqual(todayStart),
-            })) ?? 0,
-          totalThisMonth:
-            (await this.expenseRepo.sum('amount', {
-              ...query,
-              createdAt: MoreThanOrEqual(startOfMonth),
-            })) ?? 0,
-          totalThisYear:
-            (await this.expenseRepo.sum('amount', {
-              ...query,
-              createdAt: MoreThanOrEqual(startOfYear),
-            })) ?? 0,
-        };
-        const totalPages = Math.round(count / size);
+        const totalPages = Math.ceil(count / size);
         return Response.success({
           analytic,
           page: result,
@@ -355,7 +396,13 @@ export class ExpenseService {
                 : 0,
         });
       }
-      return Response.failure(Messages.NoExpenseFound);
+      return Response.fail(Messages.NoExpenseFound, {
+        analytic,
+        page: [],
+        size,
+        currentPage: Number(skip),
+        totalPages: 0,
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);
@@ -376,25 +423,20 @@ export class ExpenseService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
       const skip = page > 0 ? Number(page) : 0;
 
-      const baseQuery = {} as any;
+      const baseFilter = {} as any;
 
-      if (filterDto.from || filterDto.to) {
-        baseQuery.createdAt = Between(
-          Helpers.formatDate(
-            new Date(filterDto.from ?? Helpers.formatDate(new Date())),
-          ),
-          Helpers.formatToNextDay(
-            new Date(filterDto.to ?? Helpers.formatDate(new Date())),
-          ),
-        );
-      }
-      if (filterDto.category) baseQuery.category = filterDto.category;
-      if (filterDto.status) baseQuery.status = filterDto.status;
-      if (filterDto.targetType) baseQuery.targetType = filterDto.targetType;
+      if (filterDto.category) baseFilter.category = filterDto.category;
+      if (filterDto.status) baseFilter.status = filterDto.status;
+      if (filterDto.targetType) baseFilter.targetType = filterDto.targetType;
       if (filterDto.estateId)
-        baseQuery.estateId = Number(filterDto.estateId);
+        baseFilter.estateId = Number(filterDto.estateId);
       if (filterDto.layoutId)
-        baseQuery.layoutId = Number(filterDto.layoutId);
+        baseFilter.layoutId = Number(filterDto.layoutId);
+
+      const dateRange = Helpers.buildDateRangeFilter(filterDto);
+      const baseQuery = dateRange
+        ? { ...baseFilter, date: dateRange }
+        : { ...baseFilter };
 
       const searchFields = [
         'title',
@@ -414,14 +456,17 @@ export class ExpenseService {
       const [result, count] = await this.expenseRepo.findAndCount({
         where: query.length ? query : baseQuery,
         relations: { createdBy: true, estate: true, layout: true },
-        order: { createdAt: 'DESC' },
+        order: { date: 'DESC', createdAt: 'DESC' },
         take: size,
         skip: skip * size,
       });
 
+      const analytic = await this.buildExpenseAnalytics(baseFilter, filterDto);
+
       if (result.length) {
-        const totalPages = Math.round(count / size);
+        const totalPages = Math.ceil(count / size);
         return Response.success({
+          analytic,
           page: result,
           size: size,
           currentPage: Number(skip),
@@ -433,7 +478,13 @@ export class ExpenseService {
                 : 0,
         });
       }
-      return Response.failure(Messages.NoExpenseFound);
+      return Response.fail(Messages.NoExpenseFound, {
+        analytic,
+        page: [],
+        size,
+        currentPage: Number(skip),
+        totalPages: 0,
+      });
     } catch (ex) {
       console.log(Messages.Exception, ex);
       return Response.failure(Messages.Exception);

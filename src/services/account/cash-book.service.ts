@@ -230,7 +230,7 @@ export class CashBookService {
           : Number(process.env.APP_PAGINATION_SIZE) || 15;
 
       const skip = page > 0 ? Number(page) : 0;
-      const query = Helpers.buildFilteredQuery(filter);
+      const query = Helpers.buildFilteredQuery(filter, undefined, 'date');
 
       const [result, count] = await this.cashBookRepo.findAndCount({
         where: query,
@@ -243,8 +243,8 @@ export class CashBookService {
       if (!result.length) return Response.failure(Messages.NoRecordFound);
 
       const analytic = {
-        totalInflow: await this.cashBookRepo.sum('inflow'),
-        totalOutflow: await this.cashBookRepo.sum('outflow'),
+        totalInflow: (await this.cashBookRepo.sum('inflow', query)) ?? 0,
+        totalOutflow: (await this.cashBookRepo.sum('outflow', query)) ?? 0,
         closingBalance: result.length > 0 ? result[0].balance : 0,
       };
 
