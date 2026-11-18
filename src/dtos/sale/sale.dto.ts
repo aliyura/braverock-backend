@@ -12,15 +12,15 @@ import { Type } from 'class-transformer';
 import { PropertyType } from 'src/enums';
 
 export class SaleByExistingClientDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   clientId: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   propertyId: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(PropertyType, { message: 'propertyType must be HOUSE or PLOT' })
   propertyType: PropertyType;
 
@@ -181,17 +181,17 @@ export class SalePaymentDto {
 }
 
 class DocumentDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   documentName: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   fileUrl: string;
 }
 
 export class SaleDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   clientType: string;
 
@@ -231,19 +231,19 @@ export class SaleDto {
   @IsString()
   title: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   name: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   emailAddress: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   phoneNumber: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   dob?: string;
 
@@ -297,7 +297,7 @@ export class SaleDto {
   @IsString()
   residentialCity?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialAddress?: string;
 
@@ -419,11 +419,11 @@ export class SaleDto {
   @IsNumber()
   agencyFee: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   propertyId: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(PropertyType, { message: 'propertyType must be HOUSE or PLOT' })
   propertyType: PropertyType;
 
@@ -437,7 +437,7 @@ export class SaleDto {
 }
 
 export class SaleInterestFormDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   clientType: string;
 
@@ -473,19 +473,19 @@ export class SaleInterestFormDto {
   @IsString()
   title: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   name: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   emailAddress: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   phoneNumber: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   dob?: string;
 
@@ -535,7 +535,7 @@ export class SaleInterestFormDto {
   @IsString()
   residentialCity?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialAddress?: string;
 
@@ -599,11 +599,11 @@ export class SaleInterestFormDto {
   @IsString()
   additionalInformation: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   propertyId: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(PropertyType, { message: 'propertyType must be HOUSE or PLOT' })
   propertyType: PropertyType;
 
@@ -622,7 +622,7 @@ export class SaleInterestFormDto {
 export class UpdateSaleDto extends PartialType(SaleDto) { }
 
 export class ClientDetailsDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   clientType: string;
 
@@ -658,19 +658,19 @@ export class ClientDetailsDto {
   @IsString()
   title: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   name: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   emailAddress: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   phoneNumber: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   dob?: string;
 
@@ -720,7 +720,7 @@ export class ClientDetailsDto {
   @IsString()
   residentialCity?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   residentialAddress?: string;
 

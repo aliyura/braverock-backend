@@ -17,7 +17,7 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
   @Column({ nullable: true })
@@ -32,7 +32,7 @@ export class User {
   @Column({ nullable: true })
   thumbnail: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   phoneNumber: string;
 
   @Column({ nullable: true })
@@ -44,10 +44,10 @@ export class User {
   @Column('simple-json', { nullable: true })
   estates: any[];
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   emailAddress: string;
 
-  @Column()
+  @Column({ nullable: true })
   gender: string;
 
   @Column({ default: 'INDIVIDUAL' })

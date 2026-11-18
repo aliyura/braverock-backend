@@ -24,10 +24,10 @@ export class Sale {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   propertyId: number;
 
-  @Column()
+  @Column({ nullable: true })
   propertyType: string;
 
   @Column({ nullable: true })
@@ -47,16 +47,16 @@ export class Sale {
   @JoinColumn({ name: 'plotId' })
   plot: Plot;
 
-  @Column()
+  @Column({ nullable: true })
   title: string;
 
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
-  @Column()
+  @Column({ nullable: true })
   emailAddress: string;
 
-  @Column()
+  @Column({ nullable: true })
   phoneNumber: string;
 
   @Column({ nullable: true })
@@ -65,10 +65,10 @@ export class Sale {
   @Column({ nullable: true })
   maritalStatus: string;
 
-  @Column()
+  @Column({ nullable: true })
   gender: string;
 
-  @Column()
+  @Column({ nullable: true })
   transactionRef: string;
 
   @Column({ nullable: true })
@@ -296,7 +296,7 @@ export class Sale {
   @Column({ nullable: true })
   code: number;
 
-  @Column()
+  @Column({ nullable: true })
   clientType: string;
 
   @Column({ nullable: true })

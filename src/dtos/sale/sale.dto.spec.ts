@@ -14,7 +14,7 @@ const validSale = {
 };
 
 describe('SaleDto', () => {
-  it('accepts the required fields without the optional client fields', async () => {
+  it('accepts the fields without the optional client fields', async () => {
     const dto = plainToInstance(SaleDto, validSale);
 
     const errors = await validate(dto);
@@ -22,14 +22,11 @@ describe('SaleDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('requires dob and residential address', async () => {
-    const { dob, residentialAddress, ...rest } = validSale;
-    const dto = plainToInstance(SaleDto, rest);
+  it('allows all fields including name, dob and residential address to be optional', async () => {
+    const dto = plainToInstance(SaleDto, {});
 
     const errors = await validate(dto);
 
-    expect(errors.map((error) => error.property)).toEqual(
-      expect.arrayContaining(['dob', 'residentialAddress']),
-    );
+    expect(errors).toHaveLength(0);
   });
 });

@@ -159,23 +159,23 @@ export class SaleService {
     const hashedPassword = await this.cryptoService.encrypt(password);
 
     const user = {
-      title: sale.title,
-      name: sale.name,
-      phoneNumber: sale.phoneNumber,
+      title: sale.title || '',
+      name: sale.name || 'Client',
+      phoneNumber: sale.phoneNumber || null,
       countryCode: '+234',
-      address: sale.residentialAddress,
-      emailAddress: sale.emailAddress,
+      address: sale.residentialAddress || '',
+      emailAddress: sale.emailAddress || null,
       authProvider: AuthProvider.INTERNAL,
-      gender: sale.gender || 'Male',
+      gender: sale.gender || 'Other',
       password: hashedPassword,
-      documents: sale.documents,
+      documents: sale.documents || [],
       role: UserRole.CLIENT,
       status: StateStatus.ACTIVE,
       referredById: referrerId,
 
       nextOfKinName: sale.nextOfKinName,
       nextOfKinRelationship: sale.nextOfKinRelationship,
-      userType: sale.clientType,
+      userType: sale.clientType || 'INDIVIDUAL',
       companyName: sale.companyName,
 
       dob: sale.dob,
@@ -201,13 +201,15 @@ export class SaleService {
     sale.clientId = savedUser.id;
     await this.saleRepo.save(sale);
 
-    const accountNotification = this.buildNotification(
-      savedUser,
-      'Client Account Created',
-      NotificationCategory.NEWACCOUNT,
-      NotificationPriority.HIGH,
-    );
-    await this.queueProducerService.publishNotification(accountNotification);
+    if (savedUser.emailAddress || savedUser.phoneNumber) {
+      const accountNotification = this.buildNotification(
+        savedUser,
+        'Client Account Created',
+        NotificationCategory.NEWACCOUNT,
+        NotificationPriority.HIGH,
+      );
+      await this.queueProducerService.publishNotification(accountNotification);
+    }
 
     return savedUser;
   }
@@ -295,7 +297,7 @@ export class SaleService {
     if (!sale) return null;
 
     return {
-      title: sale.title,
+      title: sale.title || '',
       name: sale.name,
       clientType: sale.clientType,
       companyName: sale.companyName,
@@ -357,33 +359,38 @@ export class SaleService {
         return Response.failure(Messages.NoPermission);
       }
 
-      const property = await this.getPropertyByType(
-        requestDto.propertyType,
-        requestDto.propertyId,
-      );
-      if (!property) return Response.failure(Messages.PropertyNotFound);
+      let property = null;
+      let reservation = null;
 
-      let reservation = await this.reservationRepo.findOne({
-        where: {
-          propertyId: requestDto.propertyId,
-          propertyType: requestDto.propertyType,
-        },
-      });
+      if (requestDto.propertyType && requestDto.propertyId) {
+        property = await this.getPropertyByType(
+          requestDto.propertyType,
+          requestDto.propertyId,
+        );
+        if (!property) return Response.failure(Messages.PropertyNotFound);
 
-      if (property.status === StateStatus.SOLD) {
-        return Response.failure(Messages.PropertyNotAvailableForSale);
-      }
+        reservation = await this.reservationRepo.findOne({
+          where: {
+            propertyId: requestDto.propertyId,
+            propertyType: requestDto.propertyType,
+          },
+        });
 
-      if (property.status === StateStatus.RESERVED) {
-        if (!reservation)
-          return Response.failure(Messages.ReservationDetailsNotFound);
+        if (property.status === StateStatus.SOLD) {
+          return Response.failure(Messages.PropertyNotAvailableForSale);
+        }
 
-        if (
-          reservation.code !== requestDto.reservationCode ||
-          (reservation.emailAddress !== requestDto.emailAddress &&
-            reservation.phoneNumber !== requestDto.phoneNumber)
-        ) {
-          return Response.failure(Messages.PropertyReservedByAnotherClient);
+        if (property.status === StateStatus.RESERVED) {
+          if (!reservation)
+            return Response.failure(Messages.ReservationDetailsNotFound);
+
+          if (
+            reservation.code !== requestDto.reservationCode ||
+            (reservation.emailAddress !== requestDto.emailAddress &&
+              reservation.phoneNumber !== requestDto.phoneNumber)
+          ) {
+            return Response.failure(Messages.PropertyReservedByAnotherClient);
+          }
         }
       }
 
@@ -404,20 +411,23 @@ export class SaleService {
         }
       }
 
+      const propertyPrice = Number(property?.price || 0);
       const agencyFee =
-        (Number(property.price) * Number(requestDto.agencyFee)) / 100;
+        (propertyPrice * Number(requestDto.agencyFee || 0)) / 100;
 
       const totalPayableAmount =
-        Number(property.price) +
-        requestDto.infrastructureCost +
-        requestDto.facilityFee +
-        requestDto.waterFee +
-        requestDto.electricityFee +
-        requestDto.supervisionFee +
-        requestDto.authorityFee +
-        requestDto.otherFee +
+        propertyPrice +
+        Number(requestDto.infrastructureCost || 0) +
+        Number(requestDto.facilityFee || 0) +
+        Number(requestDto.waterFee || 0) +
+        Number(requestDto.electricityFee || 0) +
+        Number(requestDto.supervisionFee || 0) +
+        Number(requestDto.authorityFee || 0) +
+        Number(requestDto.otherFee || 0) +
         agencyFee -
-        requestDto.discount;
+        Number(requestDto.discount || 0);
+
+      const paidAmount = Number(requestDto.paidAmount || 0);
 
       const saleRequest = {
         ...requestDto,
@@ -428,22 +438,23 @@ export class SaleService {
         transactionRef: Helpers.getTransactionRef(),
         code: Helpers.getCode(),
         createdById: authenticatedUser.id,
-        propertyPayable: property.price,
+        propertyPayable: propertyPrice,
         agencyFee,
         totalPayableAmount,
+        paidAmount,
         propertyPayablePaid:
           requestDto.paymentMethod === PaymentMethod.FULLPAYMENT
-            ? property.price
-            : requestDto.paidAmount,
+            ? propertyPrice
+            : paidAmount,
         status:
-          requestDto.paidAmount > 0 ? StateStatus.ACTIVE : StateStatus.PENDING,
+          paidAmount > 0 ? StateStatus.ACTIVE : StateStatus.PENDING,
         paymentStatus:
-          requestDto.paidAmount >= totalPayableAmount
+          paidAmount >= totalPayableAmount
             ? StateStatus.PAID
             : StateStatus.PAYING,
-        propertyPrice: property.price,
+        propertyPrice,
         registrationFeesStatus:
-          requestDto.paidAmount > 0 ? StateStatus.PAID : StateStatus.UNPAID,
+          paidAmount > 0 ? StateStatus.PAID : StateStatus.UNPAID,
         houseId:
           requestDto.propertyType === PropertyType.HOUSE
             ? requestDto.propertyId
@@ -457,15 +468,15 @@ export class SaleService {
 
       if (
         requestDto.paymentMethod === PaymentMethod.FULLPAYMENT &&
-        requestDto.paidAmount >= totalPayableAmount
+        paidAmount >= totalPayableAmount
       ) {
-        saleRequest.infrastructureCostPaid = requestDto.infrastructureCost;
-        saleRequest.facilityFeePaid = requestDto.facilityFee;
-        saleRequest.waterFeePaid = requestDto.waterFee;
-        saleRequest.electricityFeePaid = requestDto.electricityFee;
-        saleRequest.supervisionFeePaid = requestDto.supervisionFee;
-        saleRequest.authorityFeePaid = requestDto.authorityFee;
-        saleRequest.otherFeePaid = requestDto.otherFee;
+        saleRequest.infrastructureCostPaid = Number(requestDto.infrastructureCost || 0);
+        saleRequest.facilityFeePaid = Number(requestDto.facilityFee || 0);
+        saleRequest.waterFeePaid = Number(requestDto.waterFee || 0);
+        saleRequest.electricityFeePaid = Number(requestDto.electricityFee || 0);
+        saleRequest.supervisionFeePaid = Number(requestDto.supervisionFee || 0);
+        saleRequest.authorityFeePaid = Number(requestDto.authorityFee || 0);
+        saleRequest.otherFeePaid = Number(requestDto.otherFee || 0);
       }
 
       if (requestDto.reservationCode) delete requestDto.reservationCode;
@@ -474,23 +485,26 @@ export class SaleService {
 
       const sale = await this.saleRepo.save(saleRequest);
 
-      const existingClient = await this.userRepo.findOne({
-        where: [
-          { phoneNumber: requestDto.phoneNumber },
-          { emailAddress: requestDto.emailAddress },
-        ],
-      });
+      let existingClient = null;
+      if (requestDto.phoneNumber || requestDto.emailAddress) {
+        existingClient = await this.userRepo.findOne({
+          where: [
+            ...(requestDto.phoneNumber ? [{ phoneNumber: requestDto.phoneNumber }] : []),
+            ...(requestDto.emailAddress ? [{ emailAddress: requestDto.emailAddress }] : []),
+          ],
+        });
+      }
 
       if (existingClient) {
         sale.clientId = existingClient.id;
         await this.saleRepo.save(sale);
-      } else {
+      } else if (requestDto.name || requestDto.phoneNumber || requestDto.emailAddress) {
         await this.createClientAndAttach(sale, sale.agentId);
 
         const client = await this.userRepo.findOne({
           where: { id: sale.clientId },
         });
-        if (client) {
+        if (client && (client.emailAddress || client.phoneNumber)) {
           const notification = this.buildNotification(
             client,
             'Purchase Form Created',
@@ -500,41 +514,43 @@ export class SaleService {
         }
       }
 
-      // Update property status & counts
-      property.status = StateStatus.SOLD;
-      property.clientId = sale.clientId;
-      property.saleId = sale.id;
+      // Update property status & counts if property was specified
+      if (property) {
+        property.status = StateStatus.SOLD;
+        property.clientId = sale.clientId;
+        property.saleId = sale.id;
 
-      if (requestDto.propertyType === PropertyType.HOUSE) {
-        await this.houseRepo.save(property as House);
+        if (requestDto.propertyType === PropertyType.HOUSE) {
+          await this.houseRepo.save(property as House);
 
-        const estate = await this.estateRepo.findOne({
-          where: { id: property.estateId },
-        });
-        if (estate) {
-          estate.soldHouses = estate.soldHouses + 1;
-          await this.estateRepo.save(estate);
-        }
-      } else {
-        await this.plotRepo.save(property as Plot);
-
-        if (property.locationType === LocationType.ESTATE) {
           const estate = await this.estateRepo.findOne({
             where: { id: property.estateId },
           });
           if (estate) {
-            estate.soldPlots = estate.soldPlots + 1;
+            estate.soldHouses = estate.soldHouses + 1;
             await this.estateRepo.save(estate);
           }
-        }
+        } else if (requestDto.propertyType === PropertyType.PLOT) {
+          await this.plotRepo.save(property as Plot);
 
-        if (property.locationType === LocationType.LAYOUT) {
-          const layout = await this.layouteRepo.findOne({
-            where: { id: property.layoutId },
-          });
-          if (layout) {
-            layout.soldPlots = layout.soldPlots + 1;
-            await this.layouteRepo.save(layout);
+          if (property.locationType === LocationType.ESTATE) {
+            const estate = await this.estateRepo.findOne({
+              where: { id: property.estateId },
+            });
+            if (estate) {
+              estate.soldPlots = estate.soldPlots + 1;
+              await this.estateRepo.save(estate);
+            }
+          }
+
+          if (property.locationType === LocationType.LAYOUT) {
+            const layout = await this.layouteRepo.findOne({
+              where: { id: property.layoutId },
+            });
+            if (layout) {
+              layout.soldPlots = layout.soldPlots + 1;
+              await this.layouteRepo.save(layout);
+            }
           }
         }
       }
@@ -556,17 +572,22 @@ export class SaleService {
 
   async addPublicSale(requestDto: SaleInterestFormDto): Promise<ApiResponse> {
     try {
-      const property = await this.getPropertyByType(
-        requestDto.propertyType,
-        requestDto.propertyId,
-      );
-      if (!property) {
-        return Response.failure(Messages.PropertyNotFound);
+      let property = null;
+      if (requestDto.propertyType && requestDto.propertyId) {
+        property = await this.getPropertyByType(
+          requestDto.propertyType,
+          requestDto.propertyId,
+        );
+        if (!property) {
+          return Response.failure(Messages.PropertyNotFound);
+        }
+
+        if (property.status !== StateStatus.AVAILABLE) {
+          return Response.failure(Messages.PropertyNotAvailableForSale);
+        }
       }
 
-      if (property.status !== StateStatus.AVAILABLE) {
-        return Response.failure(Messages.PropertyNotAvailableForSale);
-      }
+      const propertyPrice = Number(property?.price || 0);
 
       const saleRequest = {
         ...requestDto,
@@ -575,7 +596,7 @@ export class SaleService {
         lgaOfOrigin: requestDto.lgaOfOrigin || requestDto.cityOfOrigin,
         cityOfOrigin: requestDto.cityOfOrigin || requestDto.lgaOfOrigin,
         transactionRef: Helpers.getTransactionRef(),
-        propertyPayable: property.price,
+        propertyPayable: propertyPrice,
         code: Helpers.getCode(),
         status: StateStatus.PENDING,
         paymentStatus: StateStatus.UNPAID,
@@ -598,12 +619,14 @@ export class SaleService {
         phoneNumber: requestDto.phoneNumber,
       } as User;
 
-      const notification = this.buildNotification(
-        tempUser,
-        'Purchase Application Submitted',
-        NotificationCategory.SALE_APPLIED,
-      );
-      await this.queueProducerService.publishNotification(notification);
+      if (tempUser.emailAddress || tempUser.phoneNumber) {
+        const notification = this.buildNotification(
+          tempUser,
+          'Purchase Application Submitted',
+          NotificationCategory.SALE_APPLIED,
+        );
+        await this.queueProducerService.publishNotification(notification);
+      }
 
       return Response.success(sale);
     } catch (ex) {
@@ -661,19 +684,19 @@ export class SaleService {
       }
 
       const agencyFee =
-        (Number(property.price) * Number(requestDto.agencyFee)) / 100;
+        (Number(property?.price || 0) * Number(requestDto.agencyFee || 0)) / 100;
 
       const totalPayableAmount =
-        Number(property.price) +
-        requestDto.infrastructureCost +
-        requestDto.facilityFee +
-        requestDto.waterFee +
-        requestDto.electricityFee +
-        requestDto.supervisionFee +
-        requestDto.authorityFee +
-        requestDto.otherFee +
+        Number(property?.price || 0) +
+        Number(requestDto.infrastructureCost || 0) +
+        Number(requestDto.facilityFee || 0) +
+        Number(requestDto.waterFee || 0) +
+        Number(requestDto.electricityFee || 0) +
+        Number(requestDto.supervisionFee || 0) +
+        Number(requestDto.authorityFee || 0) +
+        Number(requestDto.otherFee || 0) +
         agencyFee -
-        requestDto.discount;
+        Number(requestDto.discount || 0);
 
       const clientDetails = (await this.extractClientDetails(
         requestDto.clientId,
